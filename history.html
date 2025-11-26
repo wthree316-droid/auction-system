@@ -34,6 +34,10 @@
             <div class="spinner-border text-secondary mb-2" role="status"></div>
             <h5 id="loadingText" class="text-secondary">กำลังเริ่มต้นระบบ...</h5>
             <div id="statusLog">Waiting for script...</div>
+            <!-- ปุ่มแก้ปัญหา -->
+            <button id="retryBtn" class="btn btn-outline-danger btn-sm mt-3 d-none" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i> ลองใหม่อีกครั้ง
+            </button>
         </div>
 
         <!-- Content List -->
@@ -52,6 +56,7 @@
                 textEl.innerText = "เกิดข้อผิดพลาด!";
                 textEl.className = "text-danger";
                 document.querySelector('.spinner-border').style.display = 'none';
+                document.getElementById('retryBtn').classList.remove('d-none'); // โชว์ปุ่มให้กดรีเฟรช
             }
         }
 
@@ -59,10 +64,10 @@
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // ==========================================
-        // ⚠️ Config (ต้องตรงกับ app.js)
+        // ⚠️ สำคัญ: ต้องใช้ Config เดียวกับ app.js เป๊ะๆ
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyCQOSvE07bNi2WfCymRdOabDewgYRs4UM4",
@@ -79,22 +84,21 @@
         const auth = getAuth(app);
 
         // 1. เริ่มระบบ Login
-        updateStatus("Attempting to login...");
-        signInAnonymously(auth).catch((error) => {
-            updateStatus("Login Failed: " + error.message, true);
-        });
+        // ใช้ onAuthStateChanged เพื่อความชัวร์
+        let isDataLoaded = false;
 
-        // 2. รอฟังผล Login
-        let dataLoaded = false;
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                if (!dataLoaded) { // โหลดแค่ครั้งเดียวพอ
-                    updateStatus(`Logged in as ${user.uid.slice(0,5)}... Loading Data...`);
+                if (!isDataLoaded) {
+                    updateStatus(`Logged in as ${user.uid.slice(0,5)}... Loading History...`);
                     loadHistory();
-                    dataLoaded = true;
+                    isDataLoaded = true;
                 }
             } else {
-                updateStatus("User signed out...");
+                updateStatus("Not logged in. Signing in...");
+                signInAnonymously(auth).catch((error) => {
+                    updateStatus("Login Failed: " + error.message, true);
+                });
             }
         });
 
@@ -109,7 +113,7 @@
                 const q = query(collection(db, "auctions"), orderBy("created_at", "desc"));
                 const snapshot = await getDocs(q);
                 
-                updateStatus(`Got ${snapshot.size} items. Rendering...`);
+                updateStatus(`Success! Found ${snapshot.size} items.`);
                 
                 // ซ่อน Loading
                 loadingSection.style.display = 'none';
@@ -180,7 +184,12 @@
                 }
 
             } catch (error) {
-                updateStatus("Data Load Error: " + error.message, true);
+                console.error("Full Error:", error);
+                let tip = "";
+                if(error.code === 'permission-denied') {
+                    tip = "<br><b>คำแนะนำ:</b> เช็คว่า Firebase Config ตรงกับ app.js หรือไม่ และ Rules ใน Firestore ต้องเป็น <code>allow read: if request.auth != null;</code>";
+                }
+                updateStatus("Data Load Error: " + error.message + tip, true);
                 // แสดง Error บนหน้าจอแทน Loading
                 loadingSection.style.display = 'block';
             }
