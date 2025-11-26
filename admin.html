@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - จัดการระบบ</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <style>
+        body { background-color: #111; color: #ddd; font-family: monospace; }
+        .table { color: #ddd; }
+        .btn-xs { padding: 2px 5px; font-size: 0.8rem; }
+        .nav-tabs .nav-link { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-black d-flex justify-content-center align-items-center" style="z-index: 9999;">
+        <div class="text-center">
+            <h2 class="text-danger mb-3">ADMIN ACCESS ONLY</h2>
+            <input type="password" id="adminPass" class="form-control text-center bg-dark text-white border-danger mb-2" placeholder="Enter Password">
+            <button class="btn btn-danger w-100" onclick="checkAdmin()">Unlock</button>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="text-danger"><i class="bi bi-shield-lock"></i> Admin Dashboard</h3>
+            <a href="index.html" class="btn btn-outline-secondary">กลับหน้าหลัก</a>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs border-secondary mb-3" id="adminTab" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active text-warning bg-transparent" data-bs-toggle="tab" data-bs-target="#users-tab">จัดการ Users (แบน/ลบ)</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link text-info bg-transparent" data-bs-toggle="tab" data-bs-target="#items-tab">จัดการสินค้า (ลบ)</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- TAB 1: USER MANAGEMENT -->
+            <div class="tab-pane fade show active" id="users-tab">
+                <div class="alert alert-dark border-secondary small text-secondary">
+                    <i class="bi bi-info-circle"></i> <b>การลบ User:</b> จะลบสินค้าที่ "กำลังขาย" ทั้งหมดของคนนั้นด้วย แต่สินค้าที่ "ขายแล้ว" จะเก็บไว้เป็นประวัติ
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped border-secondary align-middle">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>IP Address</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody">
+                            <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: ITEM MANAGEMENT -->
+            <div class="tab-pane fade" id="items-tab">
+                <div class="row g-3" id="adminProductList">
+                    <!-- สินค้าจะโชว์ที่นี่ -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, orderBy, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ==========================================
+        // ⚠️ วาง Firebase Config ของคุณตรงนี้!
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQOSvE07bNi2WfCymRdOabDewgYRs4UM4",
+            authDomain: "auction-system-e9801.firebaseapp.com",
+            projectId: "auction-system-e9801",
+            storageBucket: "auction-v2-img-999", 
+            messagingSenderId: "1089558422014",
+            appId: "1:1089558422014:web:4052e4b6e8f391c5a5a0af"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- ระบบล็อกอิน Admin ---
+        window.checkAdmin = function() {
+            const pass = document.getElementById('adminPass').value;
+            if(pass === "admin123") { // <-- แก้รหัสผ่านตรงนี้
+                document.getElementById('loginOverlay').classList.add('d-none');
+                loadUsers();
+                loadItems();
+            } else {
+                alert("Wrong Password!");
+            }
+        }
+
+        // --- 1. โหลดรายชื่อ User ---
+        async function loadUsers() {
+            const tableBody = document.getElementById('userTableBody');
+            const q = query(collection(db, "users"), orderBy("created_at", "desc"));
+            const snapshot = await getDocs(q);
+            
+            tableBody.innerHTML = "";
+            snapshot.forEach(docSnap => {
+                const u = docSnap.data();
+                const isBanned = u.is_banned;
+                const created = u.created_at ? new Date(u.created_at.seconds * 1000).toLocaleDateString() : "-";
+                
+                const html = `
+                    <tr>
+                        <td class="${isBanned ? 'text-decoration-line-through text-secondary' : 'text-white'} fw-bold">${u.displayName}</td>
+                        <td class="text-secondary small">${u.ip_address}</td>
+                        <td class="small text-secondary">${created}</td>
+                        <td>${isBanned ? '<span class="badge bg-danger">BANNED</span>' : '<span class="badge bg-success">Active</span>'}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-xs ${isBanned ? 'btn-outline-warning' : 'btn-outline-warning text-white'}" 
+                                    onclick="toggleBan('${docSnap.id}', ${isBanned})">
+                                    <i class="bi bi-slash-circle"></i> ${isBanned ? 'ปลดแบน' : 'แบน'}
+                                </button>
+                                <button class="btn btn-xs btn-outline-danger" 
+                                    onclick="deleteUser('${docSnap.id}', '${u.displayName}')">
+                                    <i class="bi bi-trash"></i> ลบ
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += html;
+            });
+        }
+
+        // --- 2. สั่งแบน/ปลดแบน ---
+        window.toggleBan = async function(uid, currentStatus) {
+            if(!confirm(currentStatus ? "ปลดแบน User นี้?" : "ยืนยันจะระงับการใช้งาน User นี้?")) return;
+            
+            await updateDoc(doc(db, "users", uid), {
+                is_banned: !currentStatus
+            });
+            alert("อัปเดตสถานะเรียบร้อย!");
+            loadUsers();
+        }
+
+        // --- 3. ลบ User (และสินค้าที่ Active) 🔥 ---
+        window.deleteUser = async function(uid, name) {
+            if(!confirm(`⚠️ คำเตือน!\n\nคุณต้องการลบผู้ใช้ "${name}" ใช่หรือไม่?\n\n- สินค้าที่เขากำลังขายอยู่จะถูกลบทั้งหมด\n- สินค้าที่ "ขายแล้ว" จะถูกเก็บไว้เป็นประวัติ`)) return;
+
+            try {
+                // A. หาและลบสินค้าของ User นี้ (เฉพาะที่ยังไม่ขาย)
+                const qItems = query(collection(db, "auctions"), where("seller_uid", "==", uid));
+                const itemSnaps = await getDocs(qItems);
+                
+                let deletedCount = 0;
+                const deletePromises = [];
+
+                itemSnaps.forEach(itemDoc => {
+                    const data = itemDoc.data();
+                    // ถ้ายังไม่ขาย (status != 'sold') -> ลบทิ้ง
+                    if(data.status !== 'sold') {
+                        deletePromises.push(deleteDoc(itemDoc.ref));
+                        deletedCount++;
+                    }
+                });
+
+                await Promise.all(deletePromises);
+
+                // B. ลบ User ออกจากระบบ
+                await deleteDoc(doc(db, "users", uid));
+
+                alert(`✅ ดำเนินการสำเร็จ!\n- ลบผู้ใช้: ${name}\n- ลบสินค้าที่กำลังขาย: ${deletedCount} รายการ`);
+                loadUsers(); // รีโหลดตาราง
+                loadItems(); // รีโหลดสินค้า
+
+            } catch (error) {
+                console.error(error);
+                alert("เกิดข้อผิดพลาด: " + error.message);
+            }
+        }
+
+        // --- 4. โหลดสินค้า (Item Tab) ---
+        async function loadItems() {
+            const container = document.getElementById('adminProductList');
+            const q = query(collection(db, "auctions"), orderBy("created_at", "desc"));
+            const snapshot = await getDocs(q);
+
+            container.innerHTML = "";
+            snapshot.forEach(docSnap => {
+                const item = docSnap.data();
+                const isSold = item.status === 'sold';
+                
+                const html = `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card p-2 d-flex flex-row align-items-center bg-dark border-secondary position-relative">
+                            ${isSold ? '<span class="position-absolute top-0 start-0 badge bg-success m-1">SOLD</span>' : ''}
+                            <img src="${item.image_url}" style="width: 60px; height: 60px; object-fit: cover;" class="rounded me-3">
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="text-truncate fw-bold text-white">${item.title}</div>
+                                <div class="small text-secondary">ราคา: ${item.current_price}</div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger ms-2" onclick="deleteItem('${docSnap.id}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        // --- 5. ลบสินค้า (รายชิ้น) ---
+        window.deleteItem = async function(itemId) {
+            if(!confirm("ลบสินค้านี้ถาวร? (กู้คืนไม่ได้)")) return;
+            await deleteDoc(doc(db, "auctions", itemId));
+            loadItems();
+        }
+
+    </script>
+</body>
+</html>

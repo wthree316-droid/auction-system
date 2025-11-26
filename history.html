@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ประวัติการประมูล - Auction History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <style>
+        body { background-color: #000; color: #fff; font-family: sans-serif; }
+        .card { background-color: #1a1a1a; border: 1px solid #333; color: white; opacity: 0.8; }
+        .card:hover { opacity: 1; border-color: #666; }
+        .product-img-list { height: 180px; object-fit: cover; width: 100%; filter: grayscale(50%); }
+        .winner-badge { background: gold; color: black; font-weight: bold; padding: 2px 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark bg-black border-bottom border-secondary mb-4">
+        <div class="container">
+            <a href="index.html" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> กลับหน้าประมูล
+            </a>
+            <span class="navbar-brand mb-0 h1 text-secondary">ประวัติสินค้าที่ปิดประมูลแล้ว</span>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <div class="row g-3" id="historyList">
+            <div class="text-center mt-5">
+                <div class="spinner-border text-secondary" role="status"></div>
+                <p class="text-secondary mt-2">กำลังโหลดข้อมูลเก่า...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script เฉพาะหน้านี้ -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ==========================================
+        // ⚠️ เอา Config จาก app.js มาใส่ตรงนี้!
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQOSvE07bNi2WfCymRdOabDewgYRs4UM4",
+            authDomain: "auction-system-e9801.firebaseapp.com",
+            projectId: "auction-system-e9801",
+            storageBucket: "auction-v2-img-999", // <-- ชื่อถังที่คุณสร้างเอง (ถ้ายังไม่สร้าง ใช้ค่านี้ไปก่อนก็ได้)
+            messagingSenderId: "1089558422014",
+            appId: "1:1089558422014:web:4052e4b6e8f391c5a5a0af"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function loadHistory() {
+            const listContainer = document.getElementById('historyList');
+            const now = new Date().getTime();
+            
+            // ดึงข้อมูลทั้งหมดมาเรียง (Client-side filtering เพื่อความง่าย)
+            const q = query(collection(db, "auctions"), orderBy("created_at", "desc"));
+            const snapshot = await getDocs(q);
+            
+            listContainer.innerHTML = "";
+            let count = 0;
+
+            snapshot.forEach(doc => {
+                const item = doc.data();
+                const isSold = item.status === 'sold';
+                const isExpired = item.end_time_ms && now > item.end_time_ms;
+
+                // โชว์เฉพาะที่ขายแล้ว หรือ หมดเวลาแล้ว
+                if (isSold || isExpired) {
+                    count++;
+                    const statusText = isSold ? `<span class="badge bg-success">ขายแล้ว</span>` : `<span class="badge bg-secondary">หมดเวลา</span>`;
+                    const priceLabel = isSold ? "จบที่ราคา" : "ราคาล่าสุด";
+                    
+                    const html = `
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="card h-100">
+                                <div class="position-absolute top-0 end-0 p-2">${statusText}</div>
+                                <img src="${item.image_url}" class="card-img-top product-img-list">
+                                <div class="card-body p-2">
+                                    <h6 class="card-title text-truncate text-secondary">${item.title}</h6>
+                                    <p class="card-text fw-bold text-white mb-1">${priceLabel}: ฿${item.current_price.toLocaleString()}</p>
+                                    <small class="text-secondary" style="font-size: 0.7rem;">
+                                        ปิดเมื่อ: ${new Date(item.end_time_ms).toLocaleDateString('th-TH')}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    listContainer.innerHTML += html;
+                }
+            });
+
+            if(count === 0) {
+                listContainer.innerHTML = "<p class='text-center text-secondary w-100'>ยังไม่มีประวัติสินค้า</p>";
+            }
+        }
+
+        loadHistory();
+    </script>
+</body>
+</html>
