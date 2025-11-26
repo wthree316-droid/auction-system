@@ -9,13 +9,11 @@
     
     <style>
         body { background-color: #000; color: #fff; font-family: sans-serif; }
-        .card { background-color: #1a1a1a; border: 1px solid #333; color: white; opacity: 0.9; transition: transform 0.2s; }
-        .card:hover { opacity: 1; border-color: #666; transform: translateY(-2px); }
+        .card { background-color: #1a1a1a; border: 1px solid #333; color: white; opacity: 0.9; }
         .product-img-list { height: 180px; object-fit: cover; width: 100%; filter: grayscale(30%); }
-        .winner-badge { background: gold; color: black; font-weight: bold; padding: 2px 8px; border-radius: 4px; }
         
-        /* Loading Overlay */
-        #loadingSpinner { display: block; } /* เริ่มต้นให้โชว์ก่อน */
+        /* Status Log สำหรับดูว่าค้างตรงไหน */
+        #statusLog { font-size: 0.8rem; color: #666; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -26,30 +24,45 @@
             <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill">
                 <i class="bi bi-arrow-left"></i> กลับหน้าประมูล
             </a>
-            <span class="navbar-brand mb-0 h1 text-secondary mx-auto pe-5">ประวัติสินค้าที่ปิดแล้ว</span>
+            <span class="navbar-brand mb-0 h1 text-secondary mx-auto pe-5">ประวัติสินค้า</span>
         </div>
     </nav>
 
     <div class="container pb-5">
-        <!-- Loading -->
-        <div id="loadingSpinner" class="text-center mt-5">
-            <div class="spinner-border text-secondary" role="status"></div>
-            <p class="text-secondary mt-2">กำลังยืนยันตัวตนและโหลดข้อมูล...</p>
+        <!-- Loading Section -->
+        <div id="loadingSection" class="text-center mt-5">
+            <div class="spinner-border text-secondary mb-2" role="status"></div>
+            <h5 id="loadingText" class="text-secondary">กำลังเริ่มต้นระบบ...</h5>
+            <div id="statusLog">Waiting for script...</div>
         </div>
 
-        <!-- List -->
+        <!-- Content List -->
         <div class="row g-3" id="historyList"></div>
     </div>
 
     <!-- Script -->
     <script type="module">
+        // ฟังก์ชันช่วยแสดงสถานะ (Debug)
+        function updateStatus(msg, isError = false) {
+            const logEl = document.getElementById('statusLog');
+            const textEl = document.getElementById('loadingText');
+            console.log(msg);
+            if(logEl) logEl.innerText = msg;
+            if(textEl && isError) {
+                textEl.innerText = "เกิดข้อผิดพลาด!";
+                textEl.className = "text-danger";
+                document.querySelector('.spinner-border').style.display = 'none';
+            }
+        }
+
+        updateStatus("Importing Libraries...");
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        // ✅ เพิ่ม Auth Import เพื่อแก้ปัญหา Permission Denied
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // ==========================================
-        // ⚠️ Config (ใช้ชุดเดียวกับ app.js)
+        // ⚠️ Config (ต้องตรงกับ app.js)
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyCQOSvE07bNi2WfCymRdOabDewgYRs4UM4",
@@ -60,46 +73,56 @@
             appId: "1:1089558422014:web:4052e4b6e8f391c5a5a0af"
         };
 
+        updateStatus("Initializing Firebase...");
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app); // ✅ สร้าง Auth Instance
+        const auth = getAuth(app);
 
-        // 1. เริ่มระบบ Login ก่อนโหลดข้อมูล
+        // 1. เริ่มระบบ Login
+        updateStatus("Attempting to login...");
         signInAnonymously(auth).catch((error) => {
-            console.error("Login Error:", error);
-            document.getElementById('loadingSpinner').innerHTML = `<p class='text-danger'>เข้าสู่ระบบไม่สำเร็จ: ${error.message}</p>`;
+            updateStatus("Login Failed: " + error.message, true);
         });
 
-        // 2. รอจนกว่าจะ Login เสร็จ ค่อยโหลดข้อมูล
+        // 2. รอฟังผล Login
+        let dataLoaded = false;
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Login ผ่านแล้ว -> โหลดข้อมูลได้
-                loadHistory();
+                if (!dataLoaded) { // โหลดแค่ครั้งเดียวพอ
+                    updateStatus(`Logged in as ${user.uid.slice(0,5)}... Loading Data...`);
+                    loadHistory();
+                    dataLoaded = true;
+                }
+            } else {
+                updateStatus("User signed out...");
             }
         });
 
         async function loadHistory() {
             const listContainer = document.getElementById('historyList');
-            const spinner = document.getElementById('loadingSpinner');
+            const loadingSection = document.getElementById('loadingSection');
             const now = new Date().getTime();
 
             try {
-                // ดึงข้อมูลทั้งหมดมาเรียง
+                // ดึงข้อมูล
+                updateStatus("Querying Firestore...");
                 const q = query(collection(db, "auctions"), orderBy("created_at", "desc"));
                 const snapshot = await getDocs(q);
                 
-                spinner.style.display = 'none'; // ซ่อน Spinner
+                updateStatus(`Got ${snapshot.size} items. Rendering...`);
+                
+                // ซ่อน Loading
+                loadingSection.style.display = 'none';
                 listContainer.innerHTML = "";
                 
                 let count = 0;
 
                 snapshot.forEach(doc => {
                     const item = doc.data();
-                    // เงื่อนไข: ขายแล้ว (sold) หรือ หมดเวลา (expired)
                     const isSold = item.status === 'sold';
                     const isExpired = item.end_time_ms && now > item.end_time_ms;
 
-                    // โชว์เฉพาะที่จบแล้ว
+                    // โชว์เฉพาะที่จบแล้ว (ขายแล้ว หรือ หมดเวลา)
                     if (isSold || isExpired) {
                         count++;
                         let statusText, badgeClass;
@@ -114,7 +137,6 @@
 
                         const priceLabel = isSold ? "จบที่ราคา" : "ราคาล่าสุด";
                         
-                        // แปลงวันที่
                         let dateStr = "-";
                         if(item.end_time_ms) {
                             dateStr = new Date(item.end_time_ms).toLocaleDateString('th-TH', {
@@ -122,10 +144,8 @@
                             });
                         }
 
-                        // เช็คชื่อผู้ชนะ (ถ้ามี)
                         let winnerInfo = "";
                         if (isSold && item.buyer_uid) {
-                            // จริงๆ ควรดึงชื่อผู้ซื้อมาโชว์ แต่เพื่อความเร็วใช้ข้อความไปก่อน
                             winnerInfo = `<div class="mt-2 pt-2 border-top border-secondary small text-warning"><i class="bi bi-trophy-fill"></i> มีผู้ชนะประมูล</div>`;
                         }
 
@@ -160,8 +180,9 @@
                 }
 
             } catch (error) {
-                console.error("History Load Error:", error);
-                spinner.innerHTML = `<p class="text-danger">เกิดข้อผิดพลาด: ${error.message}<br><small>(ตรวจสอบ Console เพื่อดูรายละเอียด)</small></p>`;
+                updateStatus("Data Load Error: " + error.message, true);
+                // แสดง Error บนหน้าจอแทน Loading
+                loadingSection.style.display = 'block';
             }
         }
     </script>
