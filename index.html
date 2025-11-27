@@ -3,239 +3,440 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web ประมูลสินค้า V-Final</title>
-    <!-- Bootstrap CSS -->
+    <title>Auction X - ประมูลสินค้าออนไลน์</title>
+    
+    <!-- Google Fonts: Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
     <style>
-        body { background-color: #000; color: #fff; font-family: sans-serif; }
-        .card { background-color: #1a1a1a; border: 1px solid #333; color: white; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-5px); border-color: #dc3545; }
-        .modal-content { background-color: #1a1a1a; color: white; border: 1px solid #dc3545; }
-        .form-control { background-color: #333; border: 1px solid #444; color: white; }
-        .form-control:focus { background-color: #444; color: white; border-color: #dc3545; box-shadow: none; }
-        .product-img-list { height: 180px; object-fit: cover; width: 100%; }
-        
-        .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; text-align:center; padding-top:20%; }
-        
-        .sold-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); 
-                      border: 5px solid red; color: red; font-size: 3rem; font-weight: bold; 
-                      padding: 10px 20px; text-transform: uppercase; opacity: 0.8; z-index: 10; pointer-events: none; }
-        
-        .bid-history-item { border-bottom: 1px solid #333; padding: 8px 0; font-size: 0.9rem; }
-        .bid-history-item:first-child { color: #00ff00; font-weight: bold; }
-        
-        .nav-tabs .nav-link.active { background-color: #dc3545; color: white; border-color: #dc3545; }
-        .nav-tabs .nav-link { color: #aaa; cursor: pointer; }
+        :root {
+            --primary-color: #ff3b3b;
+            --secondary-color: #ffb703;
+            --dark-bg: #0f0f0f;
+            --card-bg: rgba(30, 30, 30, 0.7);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+        }
 
-        /* Rank Badges */
-        .rank-badge { font-size: 0.8rem; padding: 4px 8px; border-radius: 12px; font-weight: bold; display: inline-block; min-width: 80px; text-align: center; }
-        .rank-1 { background-color: #ffd700; color: #000; box-shadow: 0 0 5px #ffd700; }
-        .rank-2 { background-color: #c0c0c0; color: #000; }
-        .rank-3 { background-color: #cd7f32; color: #000; }
-        .rank-other { background-color: #444; color: #ccc; }
+        body { 
+            background-color: var(--dark-bg); 
+            background-image: radial-gradient(circle at 10% 20%, rgba(255, 59, 59, 0.1) 0%, transparent 20%),
+                              radial-gradient(circle at 90% 80%, rgba(255, 183, 3, 0.05) 0%, transparent 20%);
+            color: #e0e0e0; 
+            font-family: 'Kanit', sans-serif; 
+            min-height: 100vh;
+        }
+
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
+
+        /* --- Navbar Glassmorphism --- */
+        .navbar-glass {
+            background: rgba(15, 15, 15, 0.85);
+            backdrop-filter: blur(10px);
+            border-bottom: var(--glass-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- Cards --- */
+        .card-custom {
+            background: var(--card-bg);
+            backdrop-filter: blur(5px);
+            border: var(--glass-border);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .card-custom:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 59, 59, 0.15);
+            border-color: var(--primary-color);
+        }
+        .product-img-wrapper {
+            position: relative;
+            overflow: hidden;
+            padding-top: 75%; /* 4:3 Aspect Ratio */
+        }
+        .product-img-list { 
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; 
+            transition: transform 0.5s ease;
+        }
+        .card-custom:hover .product-img-list { transform: scale(1.1); }
+
+        /* --- Badges --- */
+        .badge-glass {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .sold-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10; pointer-events: none;
+        }
+        .sold-text {
+            border: 4px solid #ff3b3b; color: #ff3b3b; font-size: 2rem; font-weight: 900;
+            padding: 10px 30px; text-transform: uppercase; transform: rotate(-15deg);
+            background: rgba(0,0,0,0.8);
+            box-shadow: 0 0 15px rgba(255, 59, 59, 0.5);
+        }
+
+        /* --- Modals --- */
+        .modal-content {
+            background-color: #1a1a1a;
+            border: var(--glass-border);
+            border-radius: 15px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal-header { border-bottom: 1px solid #333; }
+        
+        /* --- Inputs --- */
+        .form-control, .form-select {
+            background-color: #252525;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 8px;
+            padding: 10px 15px;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #303030;
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(255, 59, 59, 0.25);
+        }
+        .form-control::placeholder { color: #888; }
+
+        /* --- Buttons --- */
+        .btn-main {
+            background: linear-gradient(45deg, #d90429, #ef233c);
+            border: none; color: white; font-weight: 600;
+            box-shadow: 0 4px 15px rgba(239, 35, 60, 0.4);
+        }
+        .btn-main:hover { background: linear-gradient(45deg, #ef233c, #d90429); color: white; transform: translateY(-1px); }
+        
+        .btn-outline-custom {
+            border: 1px solid #444; color: #aaa;
+        }
+        .btn-outline-custom:hover {
+            border-color: var(--secondary-color); color: var(--secondary-color); background: rgba(255, 183, 3, 0.1);
+        }
+
+        /* --- Loading --- */
+        .loading-overlay {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.9); z-index:9999;
+            backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .loader {
+            width: 48px; height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: var(--primary-color);
+            border-radius: 50%;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Rank Colors --- */
+        .rank-badge { font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; font-weight: bold; min-width: 80px; text-align: center; }
+        .rank-1 { background: linear-gradient(45deg, #ffd700, #ffaa00); color: #000; box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+        .rank-2 { background: linear-gradient(45deg, #e0e0e0, #bdbdbd); color: #000; }
+        .rank-3 { background: linear-gradient(45deg, #cd7f32, #a0522d); color: #000; }
+        .rank-other { background-color: #333; color: #888; }
     </style>
 </head>
 <body>
 
-    <div id="loading" class="loading-overlay">
-        <div class="spinner-border text-danger" role="status"></div>
-        <p class="mt-2 text-danger fw-bold">กำลังประมวลผล...</p>
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay" style="display:none;">
+        <span class="loader"></span>
+        <p class="mt-3 text-uppercase fw-bold" style="letter-spacing: 2px;">Loading...</p>
     </div>
 
     <!-- Navbar -->
-    <nav class="navbar navbar-dark bg-black border-bottom border-secondary mb-3 sticky-top">
-        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <h1 class="h4 text-danger mb-0 fw-bold"><i class="bi bi-hammer"></i> ประมูลของ</h1>
-            
-            <div class="flex-grow-1 mx-md-4" style="min-width: 200px;">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control bg-dark border-secondary text-white" id="searchInput" placeholder="ค้นหาสินค้า...">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-glass sticky-top py-3">
+        <div class="container-fluid px-4">
+            <!-- Brand -->
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <div class="bg-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-hammer text-white"></i>
                 </div>
-            </div>
+                <span class="fw-bold fs-4" style="letter-spacing: -0.5px;">AUCTION<span class="text-danger">X</span></span>
+            </a>
 
-            <div class="d-flex gap-2 align-items-center">
-                <button class="btn btn-outline-info btn-sm rounded-circle" onclick="openDashboardModal()" title="ของฉัน"><i class="bi bi-grid-fill"></i></button>
-                <button class="btn btn-outline-warning btn-sm rounded-circle" onclick="openRecoverModal()" title="ย้ายเครื่อง"><i class="bi bi-arrow-repeat"></i></button>
-                <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="openProfileModal()"><i class="bi bi-person-circle"></i> <span id="navUsername">Guest</span></button>
-                <button class="btn btn-danger btn-sm rounded-pill px-3" onclick="openAddModal()"><i class="bi bi-plus-lg"></i> ลงของ</button>
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navbar Content -->
+            <div class="collapse navbar-collapse mt-3 mt-lg-0" id="navbarContent">
+                
+                <!-- Filter Section -->
+                <div class="d-flex flex-wrap gap-2 mx-lg-auto mb-3 mb-lg-0" style="max-width: 700px; width: 100%;">
+                    <div class="input-group flex-grow-1">
+                        <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control border-secondary text-white" id="searchInput" placeholder="ค้นหาสินค้าที่ต้องการ...">
+                    </div>
+                    <select class="form-select border-secondary text-white" id="filterCategory" style="max-width: 160px; background-position: right 0.75rem center;">
+                        <option value="all">📂 ทุกหมวดหมู่</option>
+                        <option value="it">📱 ไอที/Gadget</option>
+                        <option value="fashion">👕 แฟชั่น</option>
+                        <option value="amulet">🙏 พระเครื่อง</option>
+                        <option value="home">🏠 ของแต่งบ้าน</option>
+                        <option value="other">📦 อื่นๆ</option>
+                    </select>
+                    <select class="form-select border-secondary text-white" id="sortOption" style="max-width: 140px;">
+                        <option value="newest">🕒 ใหม่ล่าสุด</option>
+                        <option value="ending_soon">🔥 ใกล้จบ</option>
+                        <option value="price_asc">💰 ถูก -> แพง</option>
+                        <option value="price_desc">💎 แพง -> ถูก</option>
+                    </select>
+                </div>
+
+                <!-- User Actions -->
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-custom rounded-start-pill ps-3" onclick="openDashboardModal()" title="ของฉัน"><i class="bi bi-grid-fill"></i></button>
+                        <button class="btn btn-outline-custom rounded-end-pill pe-3" onclick="openRecoverModal()" title="ย้ายเครื่อง"><i class="bi bi-arrow-repeat"></i></button>
+                    </div>
+                    
+                    <button class="btn btn-dark border-secondary rounded-pill px-3 d-flex align-items-center gap-2" onclick="openProfileModal()">
+                        <div class="bg-secondary rounded-circle" style="width: 8px; height: 8px;"></div>
+                        <span id="navUsername" class="small text-truncate" style="max-width: 100px;">Guest</span>
+                    </button>
+
+                    <!-- Login/Logout -->
+                    <a id="btnLogin" href="login.html" class="btn btn-outline-success rounded-pill px-4 d-none fw-bold">Login</a>
+                    <button id="btnLogout" onclick="logoutSystem()" class="btn btn-outline-danger rounded-pill px-3 d-none"><i class="bi bi-power"></i></button>
+
+                    <button class="btn btn-main rounded-pill px-4 ms-1" onclick="openAddModal()">
+                        <i class="bi bi-plus-lg me-1"></i> ลงขาย
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
     
-    <div class="container mb-3 d-flex justify-content-end gap-2">
-         <a href="history.html" class="text-decoration-none text-secondary small"><i class="bi bi-clock-history"></i> ประวัติเก่า</a>
-         <span class="text-secondary small">|</span>
-         <a href="admin.html" class="text-decoration-none text-secondary small"><i class="bi bi-shield-lock"></i> ผู้ดูแล</a>
+    <!-- Sub Menu (History Button Only - Admin Hidden) -->
+    <div class="container-fluid px-4 mb-4 d-flex justify-content-end">
+         <a href="history.html" class="btn btn-outline-warning rounded-pill px-4 fw-bold transition hover-scale">
+             <i class="bi bi-clock-history me-2"></i> ดูประวัติการขาย (History)
+         </a>
+         <!-- Admin link removed as requested. Access via URL /admin.html -->
     </div>
 
-    <div class="container pb-5">
-        <div class="row g-3" id="productList">
-            <div class="text-center text-secondary mt-5">กำลังโหลดสินค้า...</div>
+    <!-- Product Grid -->
+    <div class="container-fluid px-4 pb-5">
+        <div class="row g-4" id="productList">
+            <!-- SKELETON LOADING (แสดงตอนโหลด) -->
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-danger" role="status"></div>
+                <p class="text-secondary mt-3">กำลังค้นหาสินค้าดีๆ ให้คุณ...</p>
+            </div>
         </div>
     </div>
 
     <!-- ============================================ -->
-    <!-- MODAL 1: Dashboard (ของฉัน) -->
+    <!-- MODALS SECTION -->
     <!-- ============================================ -->
+
+    <!-- 1. DASHBOARD MODAL -->
     <div class="modal fade" id="dashboardModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-info"><i class="bi bi-grid-fill"></i> แดชบอร์ดของฉัน</h5>
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-speedometer2 text-danger"></i> แดชบอร์ดของฉัน</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <ul class="nav nav-tabs border-secondary mb-3" id="dashTab" role="tablist">
-                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-selling">📦 ที่ลงขาย</button></li>
-                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-bidding">🙋‍♂️ ที่กำลังประมูล</button></li>
+                <div class="modal-body p-4">
+                    <ul class="nav nav-pills mb-4 gap-2" id="dashTab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active rounded-pill px-4" data-bs-toggle="tab" data-bs-target="#tab-selling">📦 สินค้าที่ลงขาย</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link rounded-pill px-4" data-bs-toggle="tab" data-bs-target="#tab-bidding">🙋‍♂️ รายการที่ประมูล</button>
+                        </li>
                     </ul>
                     <div class="tab-content">
-                        <div class="tab-pane fade show active" id="tab-selling">
-                            <div id="mySellingList" class="row g-2">Loading...</div>
-                        </div>
-                        <div class="tab-pane fade" id="tab-bidding">
-                            <div id="myBiddingList" class="row g-2">
-                                <div class="text-center text-secondary py-5">
-                                    <div class="spinner-border text-info mb-2"></div>
-                                    <div>กำลังคำนวณลำดับ...</div>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="tab-pane fade show active" id="tab-selling"><div id="mySellingList" class="row g-3">Loading...</div></div>
+                        <div class="tab-pane fade" id="tab-bidding"><div id="myBiddingList" class="row g-3"></div></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- MODAL 2: Add Item (ลงสินค้า) -->
-    <!-- ============================================ -->
+    <!-- 2. ADD ITEM MODAL -->
     <div class="modal fade" id="addItemModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header border-bottom border-secondary">
-                    <h5 class="modal-title text-danger">ลงสินค้าประมูล</h5>
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-bag-plus-fill"></i> ลงขายสินค้าใหม่</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <form id="addItemForm">
-                        <div class="mb-3">
-                            <label class="form-label text-secondary small">ชื่อสินค้า</label>
-                            <input type="text" class="form-control" id="inpTitle" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-secondary small">รายละเอียด</label>
-                            <textarea class="form-control" id="inpDesc" rows="2" required></textarea>
-                        </div>
-                        <div class="row">
-                            <div class="col-6 mb-3">
-                                <label class="form-label text-secondary small">ราคาเริ่มต้น</label>
-                                <input type="number" class="form-control" id="inpPrice" required>
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label text-secondary small">ชื่อสินค้า</label>
+                                <input type="text" class="form-control form-control-lg" id="inpTitle" placeholder="เช่น iPhone 15 Pro Max..." required>
                             </div>
-                            <div class="col-6 mb-3">
-                                <label class="form-label text-success small fw-bold">ราคาขายสด</label>
-                                <input type="number" class="form-control border-success" id="inpBuyNowPrice" placeholder="ไม่ระบุ">
+                            <div class="col-md-4">
+                                <label class="form-label text-secondary small">หมวดหมู่</label>
+                                <select class="form-select form-select-lg" id="inpCategory" required>
+                                    <option value="" selected disabled>เลือก...</option>
+                                    <option value="it">📱 ไอที</option>
+                                    <option value="fashion">👕 แฟชั่น</option>
+                                    <option value="amulet">🙏 พระเครื่อง</option>
+                                    <option value="home">🏠 ของใช้</option>
+                                    <option value="other">📦 อื่นๆ</option>
+                                </select>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-danger small">ปิดประมูลวันที่</label>
-                            <input type="datetime-local" class="form-control" id="inpEndTime" required>
-                        </div>
-                        
-                        <div class="bg-dark p-3 rounded mb-3 border border-secondary">
-                            <label class="small text-warning mb-2 fw-bold">ช่องทางติดต่อ</label>
-                            <div class="mb-2">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="chkProfileLine" onchange="toggleContactInput('chkProfileLine', 'inpLineId', 'line_id')">
-                                    <label class="form-check-label small text-secondary" for="chkProfileLine">ใช้ Line</label>
+                            <div class="col-12">
+                                <label class="form-label text-secondary small">รายละเอียดสินค้า</label>
+                                <textarea class="form-control" id="inpDesc" rows="3" placeholder="สภาพสินค้า, ตำหนิ, สิ่งที่จะได้รับ..." required></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small">ราคาเริ่มต้น (บาท)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-dark border-secondary text-secondary">฿</span>
+                                    <input type="number" class="form-control" id="inpPrice" required>
                                 </div>
-                                <input type="text" class="form-control form-control-sm mt-1" id="inpLineId" placeholder="Line ID">
                             </div>
-                            <div class="mb-2">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="chkProfilePhone" onchange="toggleContactInput('chkProfilePhone', 'inpPhone', 'phone')">
-                                    <label class="form-check-label small text-secondary" for="chkProfilePhone">ใช้เบอร์โทร</label>
+                            <div class="col-md-6">
+                                <label class="form-label text-success small fw-bold"><i class="bi bi-lightning-fill"></i> ราคาขายสด (ซื้อเลย)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-dark border-success text-success">฿</span>
+                                    <input type="number" class="form-control border-success" id="inpBuyNowPrice" placeholder="ไม่ระบุ = ประมูลอย่างเดียว">
                                 </div>
-                                <input type="text" class="form-control form-control-sm mt-1" id="inpPhone" placeholder="เบอร์โทรศัพท์">
                             </div>
-                            <div class="mb-2">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="chkProfileFb" onchange="toggleContactInput('chkProfileFb', 'inpFacebook', 'facebook_link')">
-                                    <label class="form-check-label small text-secondary" for="chkProfileFb">ใช้ Facebook</label>
+                            <div class="col-md-12">
+                                <label class="form-label text-danger small">ปิดประมูลวันที่</label>
+                                <input type="datetime-local" class="form-control" id="inpEndTime" required>
+                            </div>
+                            <div class="col-12">
+                                <div class="card bg-dark border-secondary p-3">
+                                    <label class="small text-warning fw-bold mb-2"><i class="bi bi-envelope"></i> ข้อมูลติดต่อ (Email)</label>
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="chkProfileEmail" onchange="toggleContactInput('chkProfileEmail', 'inpEmail', 'contact_email')">
+                                        <label class="form-check-label text-secondary small" for="chkProfileEmail">ดึงจากโปรไฟล์</label>
+                                    </div>
+                                    <input type="email" class="form-control" id="inpEmail" placeholder="name@example.com" required>
                                 </div>
-                                <input type="text" class="form-control form-control-sm mt-1" id="inpFacebook" placeholder="ลิงก์ Facebook">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-secondary small">ลิงก์รูปภาพ (URL)</label>
+                                <input type="text" class="form-control" id="inpFile" placeholder="https://image.com/pic.jpg..." required>
                             </div>
                         </div>
-
-                        <div class="mb-3">
-                            <label class="form-label text-secondary small">ลิงก์รูปภาพ</label>
-                            <input type="text" class="form-control" id="inpFile" placeholder="https://..." required>
-                        </div>
-                        <button type="submit" class="btn btn-danger w-100 mt-2">ยืนยันลงสินค้า</button>
+                        <button type="submit" class="btn btn-main w-100 mt-4 py-2 fs-5 rounded-pill shadow">ลงขายทันที</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- MODAL 3: View/Auction (ดูสินค้า) -->
-    <!-- ============================================ -->
+    <!-- 3. AUCTION/VIEW MODAL -->
     <div class="modal fade" id="auctionModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <button id="modalEditBtn" class="btn btn-outline-warning btn-sm me-auto d-none" onclick="openEditModal()">
-                        <i class="bi bi-pencil-square"></i> แก้ไขสินค้า
-                    </button>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content overflow-hidden">
+                <div class="modal-header border-0 position-absolute top-0 end-0 p-3" style="z-index: 10;">
+                    <button id="modalEditBtn" class="btn btn-warning btn-sm me-2 shadow d-none" onclick="openEditModal()"><i class="bi bi-pencil-square"></i> แก้ไข</button>
+                    <button type="button" class="btn-close btn-close-white bg-dark rounded-circle p-2 shadow" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body pt-0">
-                    <div class="row">
-                        <div class="col-md-7 position-relative">
-                            <div id="soldBadge" class="sold-badge d-none">SOLD OUT</div>
-                            <img id="modalImage" src="" class="img-fluid rounded mb-3 w-100" style="max-height: 300px; object-fit: contain; background:#000;">
-                            <h4 class="text-danger fw-bold mb-1" id="modalTitle">...</h4>
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="badge bg-warning text-dark" id="modalTimerBadge"><i class="bi bi-clock"></i> <span id="modalTimer">--:--:--</span></span>
-                                <span class="h3 fw-bold mb-0 text-white" id="modalPrice">฿0</span>
+                <div class="modal-body p-0">
+                    <div class="row g-0">
+                        <!-- Left: Image -->
+                        <div class="col-lg-7 bg-black d-flex align-items-center justify-content-center position-relative" style="min-height: 400px; background-color: #050505;">
+                            <div id="soldBadge" class="sold-overlay d-none">
+                                <div class="sold-text">SOLD OUT</div>
                             </div>
-                            <div class="bg-dark p-2 rounded mb-2 border border-secondary d-flex flex-wrap gap-3 text-secondary small align-items-center">
-                                <span><i class="bi bi-person"></i> <span id="modalSellerName" class="text-white">...</span></span>
-                                <span><i class="bi bi-line text-success"></i> <span id="modalLine" class="text-white">-</span></span>
-                                <span><i class="bi bi-telephone text-info"></i> <span id="modalPhone" class="text-white">-</span></span>
-                                <a id="modalFacebookLink" href="#" target="_blank" class="text-decoration-none d-none"><i class="bi bi-facebook text-primary"></i> <span class="text-white">แชท</span></a>
-                            </div>
-                            <div class="bg-dark p-3 rounded mb-3 border border-secondary">
-                                <small class="text-secondary d-block mb-1">รายละเอียด:</small>
-                                <p id="modalDesc" class="mb-0 small text-white-50" style="white-space: pre-line;"></p>
-                            </div>
-                        </div>
-                        <div class="col-md-5 border-start border-secondary ps-md-4">
-                            <div id="buyNowSection" class="mb-3 d-none">
-                                <div class="card border-success bg-dark">
-                                    <div class="card-body p-2 text-center">
-                                        <p class="mb-1 text-success small">ราคาขายสด (ไม่ต้องรอ)</p>
-                                        <h4 class="text-success fw-bold" id="buyNowPriceDisplay">฿0</h4>
-                                        <button class="btn btn-success w-100 fw-bold" onclick="buyNow()"><i class="bi bi-bag-check"></i> ซื้อสดทันที</button>
+                            <img id="modalImage" src="" class="img-fluid" style="max-height: 500px; width: 100%; object-fit: contain;">
+                            
+                            <!-- Badges on Image -->
+                            <div class="position-absolute bottom-0 start-0 p-3 w-100 p-4" style="background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);">
+                                <span id="modalCategoryBadge" class="badge bg-light text-dark mb-2">หมวดหมู่</span>
+                                <h2 class="text-white fw-bold mb-1" id="modalTitle">...</h2>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="d-flex align-items-center text-warning">
+                                        <i class="bi bi-clock-history me-2"></i>
+                                        <span id="modalTimer" class="fw-bold font-monospace">--:--:--</span>
+                                    </div>
+                                    <div class="vr bg-secondary"></div>
+                                    <div class="d-flex align-items-center text-white">
+                                        <small class="text-secondary me-2">ราคาปัจจุบัน:</small>
+                                        <span class="h4 mb-0 fw-bold" id="modalPrice">฿0</span>
                                     </div>
                                 </div>
-                                <hr class="border-secondary">
                             </div>
-                            <h6 class="text-secondary border-bottom border-secondary pb-2">ประวัติการเสนอราคา</h6>
-                            <div id="bidHistoryList" style="height: 200px; overflow-y: auto;"><div class="text-center text-secondary small mt-4">กำลังโหลด...</div></div>
-                            <div class="mt-3 pt-3 border-top border-secondary" id="bidControlSection">
-                                <label class="small text-secondary mb-1">เสนอราคาประมูล</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" placeholder="ระบุราคา" id="bidInput">
-                                    <button class="btn btn-danger" onclick="placeBid()">สู้ราคา!</button>
+                        </div>
+
+                        <!-- Right: Details & Action -->
+                        <div class="col-lg-5 p-4 d-flex flex-column" style="background: #151515;">
+                            
+                            <!-- Seller Info -->
+                            <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded bg-dark border border-secondary">
+                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-person-fill text-white"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="text-secondary small">ผู้ขาย</div>
+                                    <div class="fw-bold text-white" id="modalSellerName">...</div>
+                                </div>
+                                <a id="modalEmailLink" href="#" class="btn btn-outline-light btn-sm rounded-pill d-none">
+                                    <i class="bi bi-envelope"></i> ติดต่อ
+                                </a>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="flex-grow-1 mb-4">
+                                <h6 class="text-secondary border-bottom border-secondary pb-2">รายละเอียด</h6>
+                                <p id="modalDesc" class="text-white-50 small" style="white-space: pre-line; line-height: 1.6;">...</p>
+                            </div>
+
+                            <!-- Buy Now -->
+                            <div id="buyNowSection" class="mb-3 d-none">
+                                <button class="btn btn-outline-success w-100 py-3 rounded-3 d-flex justify-content-between align-items-center" onclick="buyNow()">
+                                    <span class="fw-bold"><i class="bi bi-lightning-fill"></i> ซื้อสดทันที</span>
+                                    <span class="fs-5 fw-bold" id="buyNowPriceDisplay">฿0</span>
+                                </button>
+                                <div class="text-center text-secondary small mt-1">ไม่ต้องรอจบประมูล ได้ของทันที</div>
+                            </div>
+
+                            <!-- Bidding History -->
+                            <div class="bg-dark rounded-3 border border-secondary p-3 mb-3 flex-grow-1" style="max-height: 200px; overflow-y: auto;">
+                                <h6 class="text-secondary small mb-3 sticky-top bg-dark pb-2 border-bottom border-secondary">ประวัติการเสนอราคา</h6>
+                                <div id="bidHistoryList" class="d-flex flex-column gap-2">
+                                    <div class="text-center small text-secondary mt-3">กำลังโหลด...</div>
                                 </div>
                             </div>
-                            <div id="auctionEndedMsg" class="alert alert-danger mt-3 text-center d-none">🔒 ปิดประมูลแล้ว</div>
-                            <div id="soldMsg" class="alert alert-success mt-3 text-center d-none">🎉 สินค้านี้ขายแล้ว!</div>
+
+                            <!-- Action Bar -->
+                            <div id="bidControlSection" class="mt-auto pt-3 border-top border-secondary">
+                                <div id="auctionEndedMsg" class="alert alert-secondary text-center mb-0 d-none"><i class="bi bi-lock-fill"></i> ปิดประมูลแล้ว</div>
+                                <div id="soldMsg" class="alert alert-success text-center mb-0 d-none"><i class="bi bi-check-circle-fill"></i> สินค้านี้ขายแล้ว!</div>
+                                
+                                <div class="input-group input-group-lg">
+                                    <input type="number" class="form-control bg-black text-white border-secondary" placeholder="ระบุราคา" id="bidInput">
+                                    <button class="btn btn-main px-4" onclick="placeBid()">สู้ราคา!</button>
+                                </div>
+                                <div class="text-end mt-1">
+                                    <small class="text-secondary" style="font-size: 0.7rem;">*ใส่ราคาที่สูงกว่าปัจจุบัน</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -243,17 +444,15 @@
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- MODAL 4: Edit Item (แก้ไขสินค้า) -->
-    <!-- ============================================ -->
+    <!-- 4. EDIT ITEM MODAL -->
     <div class="modal fade" id="editItemModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header border-bottom border-secondary">
-                    <h5 class="modal-title text-warning">แก้ไขสินค้า</h5>
+                    <h5 class="modal-title text-warning fw-bold">แก้ไขข้อมูลสินค้า</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <form id="editItemForm">
                         <input type="hidden" id="editProductId">
                         <div class="mb-3">
@@ -261,13 +460,20 @@
                             <input type="text" class="form-control" id="editTitle" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-secondary small">รายละเอียด</label>
-                            <textarea class="form-control" id="editDesc" rows="3" required></textarea>
+                            <label class="form-label text-secondary small">หมวดหมู่</label>
+                            <select class="form-select" id="editCategory" required>
+                                <option value="it">📱 ไอที</option>
+                                <option value="fashion">👕 แฟชั่น</option>
+                                <option value="amulet">🙏 พระเครื่อง</option>
+                                <option value="home">🏠 ของใช้</option>
+                                <option value="other">📦 อื่นๆ</option>
+                            </select>
                         </div>
+                        <div class="mb-3"><label class="form-label text-secondary small">รายละเอียด</label><textarea class="form-control" id="editDesc" rows="3" required></textarea></div>
                         <div class="row">
                             <div class="col-6 mb-3">
-                                <label class="form-label text-secondary small">ราคาเริ่มต้น</label>
-                                <input type="number" class="form-control" id="editPrice" readonly disabled>
+                                <label class="form-label text-secondary small">ราคาเริ่มต้น (แก้ไม่ได้)</label>
+                                <input type="number" class="form-control bg-dark" id="editPrice" readonly disabled>
                             </div>
                             <div class="col-6 mb-3">
                                 <label class="form-label text-success small fw-bold">ราคาขายสด</label>
@@ -278,70 +484,92 @@
                             <label class="form-label text-danger small">ปิดประมูลวันที่</label>
                             <input type="datetime-local" class="form-control" id="editEndTime" required>
                         </div>
-                        <div class="bg-dark p-2 rounded mb-3 border border-secondary">
-                            <label class="small text-warning mb-2">ข้อมูลติดต่อ</label>
-                            <input type="text" class="form-control form-control-sm mb-2" id="editLineId" placeholder="Line ID">
-                            <input type="text" class="form-control form-control-sm mb-2" id="editPhone" placeholder="เบอร์โทร">
-                            <input type="text" class="form-control form-control-sm" id="editFacebook" placeholder="Link Facebook">
+                        <div class="mb-3">
+                            <label class="form-label text-warning small">ติดต่อ (Email)</label>
+                            <input type="email" class="form-control" id="editEmail">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-secondary small">ลิงก์รูปภาพ</label>
+                            <label class="form-label text-secondary small">รูปภาพ</label>
                             <input type="text" class="form-control" id="editFile" required>
                         </div>
-                        <button type="submit" class="btn btn-warning w-100 mt-2 text-dark fw-bold">บันทึกการแก้ไข</button>
+                        <button type="submit" class="btn btn-warning w-100 mt-2 fw-bold text-dark">บันทึกการเปลี่ยนแปลง</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- MODAL 5: Profile (โปรไฟล์) -->
-    <!-- ============================================ -->
+    <!-- 5. PROFILE MODAL -->
     <div class="modal fade" id="profileModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title">ข้อมูลส่วนตัว</h5>
+                    <h5 class="modal-title fw-bold">โปรไฟล์ของฉัน</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 80px; height: 80px;">
+                            <i class="bi bi-person-fill display-4 text-white"></i>
+                        </div>
+                        <h5 class="text-white mb-0" id="profileDisplayNameDisplay">User</h5>
+                        <small class="text-secondary" id="profileUidDisplay">UID: ...</small>
+                    </div>
+
                     <div class="mb-3">
-                        <label class="text-secondary small">ชื่อบัญชี</label>
+                        <label class="text-secondary small">ชื่อที่แสดง</label>
                         <input type="text" class="form-control text-warning fw-bold bg-dark border-secondary" id="profileNameInput">
                     </div>
                     <div class="bg-dark p-3 rounded mb-3 border border-secondary">
-                        <label class="small text-info mb-2 fw-bold">ข้อมูลติดต่อเริ่มต้น</label>
-                        <input type="text" class="form-control form-control-sm bg-black text-white mb-2" id="profileLine" placeholder="Line ID">
-                        <input type="text" class="form-control form-control-sm bg-black text-white mb-2" id="profilePhone" placeholder="เบอร์โทร">
-                        <input type="text" class="form-control form-control-sm bg-black text-white mb-2" id="profileFb" placeholder="ลิงก์ Facebook">
+                        <label class="small text-info mb-2 fw-bold"><i class="bi bi-envelope"></i> อีเมลสำหรับติดต่อ (Default)</label>
+                        <input type="email" class="form-control form-control-sm bg-black text-white" id="profileEmail" placeholder="example@email.com">
                     </div>
-                    <hr class="border-secondary">
+                    
+                    <hr class="border-secondary my-4">
+                    
+                    <!-- Link Account -->
+                    <div id="linkAccountSection" class="bg-dark p-3 rounded mb-3 border border-primary position-relative overflow-hidden">
+                        <div class="position-absolute top-0 end-0 p-2 opacity-25"><i class="bi bi-shield-check display-4 text-primary"></i></div>
+                        <label class="small text-primary mb-2 fw-bold"><i class="bi bi-link-45deg"></i> ผูกบัญชีถาวร (แนะนำ)</label>
+                        <div class="mb-2"><input type="email" class="form-control form-control-sm bg-black text-white" id="linkEmail" placeholder="อีเมลสำหรับล็อกอิน"></div>
+                        <div class="mb-2"><input type="password" class="form-control form-control-sm bg-black text-white" id="linkPassword" placeholder="รหัสผ่าน (6 ตัวขึ้นไป)"></div>
+                        <button class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="linkAccount()">ยืนยันการผูกบัญชี</button>
+                    </div>
+
+                    <!-- Secret Code -->
                     <div class="mb-3">
-                        <label class="text-danger small fw-bold">🔐 รหัสลับ</label>
-                        <input type="text" class="form-control" id="profileSecretCode" placeholder="ตั้งรหัส เช่น 1234">
+                        <label class="text-danger small fw-bold">🔐 รหัสลับ (Emergency Recovery)</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control bg-dark text-danger fw-bold border-secondary font-monospace" id="profileSecretCode" readonly placeholder="Loading...">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copySecret()"><i class="bi bi-clipboard"></i></button>
+                        </div>
+                        <div class="form-text text-secondary small" style="font-size: 0.7rem;">*ใช้กู้คืนบัญชีในกรณีที่ยังไม่ได้ผูกอีเมล</div>
                     </div>
-                    <button class="btn btn-danger w-100" onclick="updateUserProfile()">บันทึกข้อมูล</button>
+
+                    <button class="btn btn-light w-100 fw-bold" onclick="updateUserProfile()">บันทึกข้อมูล</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- MODAL 6: Recover (ย้ายเครื่อง) -->
-    <!-- ============================================ -->
+    <!-- 6. RECOVER MODAL -->
     <div class="modal fade" id="recoverModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-warning">📲 ย้ายข้อมูลจากเครื่องเก่า</h5>
+                    <h5 class="modal-title text-warning fw-bold">📲 ย้ายข้อมูลจากเครื่องเก่า</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <p class="small text-secondary">กรอก "ชื่อ" และ "รหัสลับ" ของเครื่องเก่า</p>
-                    <div class="mb-3"><label class="form-label text-secondary small">ชื่อบัญชีเครื่องเก่า</label><input type="text" class="form-control" id="recoverOldName"></div>
-                    <div class="mb-3"><label class="form-label text-secondary small">รหัสลับ</label><input type="text" class="form-control" id="recoverSecretCode"></div>
-                    <button class="btn btn-warning w-100 text-black fw-bold" onclick="recoverAccount()">ดึงข้อมูลทันที</button>
+                <div class="modal-body p-4 text-center">
+                    <i class="bi bi-phone-vibrate display-1 text-warning mb-3 d-block"></i>
+                    <p class="text-secondary">หากคุณเคยใช้งานเครื่องอื่นแต่<b>ยังไม่ได้ผูกอีเมล</b><br>กรอก <b>"รหัสลับ 13 หลัก"</b> ของเครื่องนั้นเพื่อดึงข้อมูล</p>
+                    
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control bg-dark text-white border-secondary text-center fw-bold fs-4 font-monospace" id="recoverSecretCode" placeholder="Code" maxlength="13" style="letter-spacing: 2px;">
+                        <label for="recoverSecretCode" class="text-secondary">รหัสลับ (Secret Code)</label>
+                    </div>
+                    
+                    <button class="btn btn-warning w-100 text-black fw-bold py-2" onclick="recoverAccount()">ดึงข้อมูลทันที</button>
                 </div>
             </div>
         </div>
