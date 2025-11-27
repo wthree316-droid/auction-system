@@ -79,7 +79,7 @@
             .btn-mobile-lg { padding: 12px 20px; font-size: 1.1rem; }
             
             /* Mobile Navbar Tweaks */
-            .navbar-actions { justify-content: center !important; width: 100%; margin-top: 10px; }
+            .navbar-actions { justify-content: center !important; width: 100%; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; }
         }
         @media (min-width: 992px) { .modal-image-col { min-height: 600px; } }
 
@@ -94,6 +94,9 @@
         .btn-main:hover { background: linear-gradient(135deg, #ef233c 0%, #d90429 100%); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 35, 60, 0.6); }
         .btn-outline-custom { border: 1px solid #555; color: #ccc; }
         .btn-outline-custom:hover { border-color: white; color: white; background: rgba(255,255,255,0.1); }
+        
+        .btn-gold { color: #ffb703; border-color: #ffb703; background: transparent; }
+        .btn-gold:hover { background: #ffb703; color: #000; }
 
         .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: #0f0f0f; z-index:9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
@@ -152,7 +155,7 @@
 
                 <!-- 3. Action Groups (Right Side) -->
                 <!-- จัดกลุ่มให้สมดุล: Tools | User | Actions -->
-                <div class="d-flex gap-2 align-items-center flex-wrap navbar-actions justify-content-end">
+                <div class="d-flex gap-2 align-items-center flex-wrap navbar-actions justify-content-center justify-content-xl-end">
                     
                     <!-- Group A: Tools (ของฉัน / ย้ายเครื่อง) -->
                     <div class="btn-group shadow-sm me-1">
@@ -173,14 +176,16 @@
                     </div>
 
                     <!-- Group C: Main Actions (ลงขาย / ประวัติ) -->
-                    <!-- 🔥 จัดกลุ่มใหม่: ลงขายอยู่หน้า, ประวัติอยู่หลัง -->
+                    <!-- 🔥 ปรับปรุง: ย้ายกลุ่มนี้มารวมกัน และสลับที่ตามสั่ง -->
                     <div class="d-flex gap-2">
+                        <!-- 1. ลงขาย (มาอยู่หน้าสุดของกลุ่มนี้) -->
                         <button class="btn btn-main rounded-pill px-4 shadow-sm d-flex align-items-center gap-2" onclick="openAddModal()">
                             <i class="bi bi-plus-lg"></i> <span>ลงขาย</span>
                         </button>
                         
-                        <a href="history.html" class="btn btn-outline-warning rounded-pill px-3 fw-bold shadow-sm d-flex align-items-center gap-2" title="ประวัติการขาย">
-                            <i class="bi bi-clock-history"></i> <span class="d-none d-md-inline">ประวัติ</span>
+                        <!-- 2. ประวัติ (ย้ายมาอยู่ข้างๆ และทำให้ชัดเจน) -->
+                        <a href="history.html" class="btn btn-gold rounded-pill px-3 fw-bold shadow-sm d-flex align-items-center gap-2 border border-warning" title="ดูประวัติการขาย">
+                            <i class="bi bi-clock-history"></i> <span>ประวัติ</span>
                         </a>
                     </div>
 
@@ -189,6 +194,7 @@
         </div>
     </nav>
     
+    <!-- (ส่วนอื่นๆ ของไฟล์เหมือนเดิม) -->
     <!-- Product Grid -->
     <div class="container-fluid px-3 px-lg-5 pb-5 mt-4">
         <div class="row g-3 g-lg-4" id="productList">
@@ -200,9 +206,6 @@
         </div>
     </div>
 
-    <!-- (Modals: Dashboard, AddItem, Auction, EditItem, Profile, Recover -> เหมือนเดิมทั้งหมด) -->
-    <!-- ใส่โค้ด Modal ต่อจากตรงนี้ได้เลย (ไม่มีการเปลี่ยนแปลง Logic ภายใน Modal) -->
-    
     <!-- 1. DASHBOARD MODAL -->
     <div class="modal fade" id="dashboardModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-xl">
