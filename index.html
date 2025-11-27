@@ -215,10 +215,10 @@
                     
                     <button class="btn btn-dark border-secondary rounded-pill px-3 d-flex align-items-center gap-2" onclick="openProfileModal()">
                         <div class="bg-secondary rounded-circle" style="width: 8px; height: 8px;"></div>
-                        <span id="navUsername" class="small text-truncate" style="max-width: 100px;">Guest</span>
+                        <span id="navUsername" class="small text-truncate" style="max-width: 100px;">Loading...</span>
                     </button>
 
-                    <!-- Login/Logout -->
+                    <!-- 🔥 ปุ่ม Login / Logout (จะสลับกันแสดงผล) -->
                     <a id="btnLogin" href="login.html" class="btn btn-outline-success rounded-pill px-4 d-none fw-bold">Login</a>
                     <button id="btnLogout" onclick="logoutSystem()" class="btn btn-outline-danger rounded-pill px-3 d-none"><i class="bi bi-power"></i></button>
 
@@ -231,11 +231,8 @@
     </nav>
     
     <!-- Sub Menu (History Button Only - Admin Hidden) -->
-    <div class="container-fluid px-4 mb-4 d-flex justify-content-end">
-         <a href="history.html" class="btn btn-outline-warning rounded-pill px-4 fw-bold transition hover-scale">
-             <i class="bi bi-clock-history me-2"></i> ดูประวัติการขาย (History)
-         </a>
-         <!-- Admin link removed as requested. Access via URL /admin.html -->
+    <div class="container-fluid px-4 mb-4 text-end">
+         <a href="history.html" class="text-decoration-none text-muted small hover-white me-3 transition"><i class="bi bi-clock-history"></i> ประวัติการขาย</a>
     </div>
 
     <!-- Product Grid -->
@@ -396,8 +393,8 @@
                                     <div class="text-secondary small">ผู้ขาย</div>
                                     <div class="fw-bold text-white" id="modalSellerName">...</div>
                                 </div>
-                                <a id="modalEmailLink" href="#" class="btn btn-outline-light btn-sm rounded-pill d-none">
-                                    <i class="bi bi-envelope"></i> ติดต่อ
+                                <a id="modalEmailLink" href="#" class="btn btn-outline-light btn-sm rounded-pill border-0 d-none" title="ส่งอีเมล">
+                                    <i class="bi bi-envelope-fill"></i>
                                 </a>
                             </div>
 
@@ -427,14 +424,14 @@
                             <!-- Action Bar -->
                             <div id="bidControlSection" class="mt-auto pt-3 border-top border-secondary">
                                 <div id="auctionEndedMsg" class="alert alert-secondary text-center mb-0 d-none"><i class="bi bi-lock-fill"></i> ปิดประมูลแล้ว</div>
-                                <div id="soldMsg" class="alert alert-success text-center mb-0 d-none"><i class="bi bi-check-circle-fill"></i> สินค้านี้ขายแล้ว!</div>
+                                <div id="soldMsg" class="alert alert-success text-center mb-0 d-none"><i class="bi bi-check-circle-fill"></i> ขายแล้ว!</div>
                                 
                                 <div class="input-group input-group-lg">
                                     <input type="number" class="form-control bg-black text-white border-secondary" placeholder="ระบุราคา" id="bidInput">
-                                    <button class="btn btn-main px-4" onclick="placeBid()">สู้ราคา!</button>
+                                    <button class="btn btn-main px-4 fw-bold" onclick="placeBid()">ส่งราคา</button>
                                 </div>
                                 <div class="text-end mt-1">
-                                    <small class="text-secondary" style="font-size: 0.7rem;">*ใส่ราคาที่สูงกว่าปัจจุบัน</small>
+                                    <small class="text-secondary" style="font-size: 0.65rem;">*ขั้นต่ำ +1 บาท จากราคาปัจจุบัน</small>
                                 </div>
                             </div>
                         </div>
