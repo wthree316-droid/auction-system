@@ -19,7 +19,7 @@
             --secondary-color: #ffb703;
             --dark-bg: #0f0f0f;
             --card-bg: rgba(30, 30, 30, 0.7);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.15); /* เพิ่มความชัดของขอบ */
         }
 
         body { 
@@ -37,6 +37,7 @@
         ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
 
+        /* --- Navbar Glassmorphism --- */
         .navbar-glass {
             background: rgba(15, 15, 15, 0.95);
             backdrop-filter: blur(12px);
@@ -44,6 +45,65 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
         }
 
+        /* --- Enhanced Inputs & Selects --- */
+        .input-group-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: var(--glass-border);
+            border-radius: 50px !important; /* ทรงแคปซูล */
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .input-group-glass:hover, .input-group-glass:focus-within {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255, 59, 59, 0.1);
+        }
+        .input-group-glass .input-group-text {
+            background: transparent;
+            border: none;
+            color: #aaa;
+            padding-left: 20px;
+        }
+        .input-group-glass .form-control {
+            background: transparent;
+            border: none;
+            color: white;
+            box-shadow: none;
+            padding-top: 12px; padding-bottom: 12px;
+        }
+        .input-group-glass .form-control::placeholder { color: #666; }
+
+        /* Custom Select Styling */
+        .form-select-custom {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: var(--glass-border);
+            color: #e0e0e0;
+            border-radius: 12px; /* มุมมนกำลังดี */
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            /* Custom Arrow Icon (optional color fix) */
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23aaaaaa' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        }
+        .form-select-custom:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        .form-select-custom:focus {
+            background-color: rgba(30, 30, 30, 0.9);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(255, 59, 59, 0.15);
+            color: white;
+        }
+        /* Styling Options inside (limited support but good for dark mode) */
+        .form-select-custom option {
+            background-color: #1a1a1a;
+            color: white;
+            padding: 10px;
+        }
+
+
+        /* --- Cards --- */
         .card-custom {
             background: var(--card-bg);
             backdrop-filter: blur(5px);
@@ -80,6 +140,9 @@
             
             /* Mobile Navbar Tweaks */
             .navbar-actions { justify-content: center !important; width: 100%; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; }
+            /* Mobile Filters Stack */
+            .filter-group { flex-direction: row !important; width: 100%; }
+            .filter-group select { flex: 1; }
         }
         @media (min-width: 992px) { .modal-image-col { min-height: 600px; } }
 
@@ -129,61 +192,61 @@
             <!-- Navbar Content -->
             <div class="collapse navbar-collapse mt-3 mt-xl-0" id="navbarContent">
                 
-                <!-- 2. Search & Filters (Center Group) -->
-                <div class="d-flex flex-column flex-lg-row gap-2 mx-auto w-100 justify-content-center mb-3 mb-xl-0" style="max-width: 750px;">
-                    <div class="input-group flex-grow-1">
-                        <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control border-secondary text-white" id="searchInput" placeholder="ค้นหาสินค้า...">
+                <!-- 2. Search & Filters (Center Group - Redesigned ✨) -->
+                <div class="d-flex flex-column flex-lg-row gap-3 mx-auto w-100 justify-content-center mb-3 mb-xl-0" style="max-width: 800px;">
+                    
+                    <!-- Search Box (Capsule Style) -->
+                    <div class="input-group input-group-glass flex-grow-1" style="min-width: 250px;">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="searchInput" placeholder="ค้นหาสินค้าที่ต้องการ...">
                     </div>
-                    <div class="d-flex gap-2">
-                        <select class="form-select border-secondary text-white flex-fill" id="filterCategory">
-                            <option value="all">📂 ทุกหมวด</option>
-                            <option value="it">📱 ไอที</option>
+                    
+                    <!-- Filter Group (Side by Side) -->
+                    <div class="d-flex gap-2 filter-group">
+                        <select class="form-select form-select-custom flex-fill" id="filterCategory" style="min-width: 140px;">
+                            <option value="all">📂 ทุกหมวดหมู่</option>
+                            <option value="it">📱 ไอที/Gadget</option>
                             <option value="fashion">👕 แฟชั่น</option>
                             <option value="amulet">🙏 พระเครื่อง</option>
-                            <option value="home">🏠 ของใช้</option>
+                            <option value="home">🏠 ของแต่งบ้าน</option>
                             <option value="other">📦 อื่นๆ</option>
                         </select>
-                        <select class="form-select border-secondary text-white flex-fill" id="sortOption">
+                        
+                        <select class="form-select form-select-custom flex-fill" id="sortOption" style="min-width: 140px;">
                             <option value="newest">🕒 ใหม่ล่าสุด</option>
                             <option value="ending_soon">🔥 ใกล้จบ</option>
-                            <option value="price_asc">💰 ถูกไปแพง</option>
-                            <option value="price_desc">💎 แพงไปถูก</option>
+                            <option value="price_asc">💰 ราคา: ต่ำ ➜ สูง</option>
+                            <option value="price_desc">💎 ราคา: สูง ➜ ต่ำ</option>
                         </select>
                     </div>
+
                 </div>
 
                 <!-- 3. Action Groups (Right Side) -->
-                <!-- จัดกลุ่มให้สมดุล: Tools | User | Actions -->
                 <div class="d-flex gap-2 align-items-center flex-wrap navbar-actions justify-content-center justify-content-xl-end">
                     
-                    <!-- Group A: Tools (ของฉัน / ย้ายเครื่อง) -->
+                    <!-- Group A: Tools -->
                     <div class="btn-group shadow-sm me-1">
                         <button class="btn btn-outline-custom ps-3 pe-2" onclick="openDashboardModal()" title="ของฉัน"><i class="bi bi-grid-fill"></i></button>
                         <button class="btn btn-outline-custom ps-2 pe-3" onclick="openRecoverModal()" title="ย้ายเครื่อง"><i class="bi bi-arrow-repeat"></i></button>
                     </div>
                     
-                    <!-- Group B: User (Profile / Login) -->
+                    <!-- Group B: User -->
                     <div class="d-flex gap-2 align-items-center bg-dark border border-secondary rounded-pill px-2 py-1 shadow-sm me-1">
                         <button class="btn btn-sm btn-link text-decoration-none text-white d-flex align-items-center gap-2" onclick="openProfileModal()">
                             <div class="bg-secondary rounded-circle" style="width: 24px; height: 24px;"></div>
                             <span id="navUsername" class="small text-truncate" style="max-width: 80px;">Guest</span>
                         </button>
                         <div class="vr bg-secondary" style="height: 20px;"></div>
-                        <!-- Login/Logout -->
                         <a id="btnLogin" href="login.html" class="btn btn-sm btn-success rounded-pill px-3 fw-bold d-none" style="font-size: 0.8rem;">Login</a>
                         <button id="btnLogout" onclick="logoutSystem()" class="btn btn-sm btn-outline-danger rounded-circle d-none" style="width: 30px; height: 30px; padding: 0;"><i class="bi bi-power"></i></button>
                     </div>
 
-                    <!-- Group C: Main Actions (ลงขาย / ประวัติ) -->
-                    <!-- 🔥 ปรับปรุง: ย้ายกลุ่มนี้มารวมกัน และสลับที่ตามสั่ง -->
+                    <!-- Group C: Main Actions -->
                     <div class="d-flex gap-2">
-                        <!-- 1. ลงขาย (มาอยู่หน้าสุดของกลุ่มนี้) -->
                         <button class="btn btn-main rounded-pill px-4 shadow-sm d-flex align-items-center gap-2" onclick="openAddModal()">
                             <i class="bi bi-plus-lg"></i> <span>ลงขาย</span>
                         </button>
-                        
-                        <!-- 2. ประวัติ (ย้ายมาอยู่ข้างๆ และทำให้ชัดเจน) -->
                         <a href="history.html" class="btn btn-gold rounded-pill px-3 fw-bold shadow-sm d-flex align-items-center gap-2 border border-warning" title="ดูประวัติการขาย">
                             <i class="bi bi-clock-history"></i> <span>ประวัติ</span>
                         </a>
@@ -194,8 +257,7 @@
         </div>
     </nav>
     
-    <!-- (ส่วนอื่นๆ ของไฟล์เหมือนเดิม) -->
-    <!-- Product Grid -->
+    <!-- Product Grid (Responsive) -->
     <div class="container-fluid px-3 px-lg-5 pb-5 mt-4">
         <div class="row g-3 g-lg-4" id="productList">
             <!-- Skeleton Loading -->
@@ -206,6 +268,7 @@
         </div>
     </div>
 
+    <!-- (MODALS SECTION - No Changes in Logic, just kept for completeness) -->
     <!-- 1. DASHBOARD MODAL -->
     <div class="modal fade" id="dashboardModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-xl">
