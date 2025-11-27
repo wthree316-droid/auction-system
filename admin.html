@@ -8,251 +8,233 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
     <style>
-        body { background-color: #111; color: #ddd; font-family: monospace; }
-        .table { color: #ddd; }
-        .btn-xs { padding: 2px 5px; font-size: 0.8rem; }
-        .nav-tabs .nav-link { cursor: pointer; }
+        body { background-color: #0f0f0f; color: #e0e0e0; font-family: monospace; }
+        .card-stat { background: #1f1f1f; border-left: 4px solid; padding: 15px; border-radius: 5px; }
+        .border-blue { border-color: #0d6efd; }
+        .border-green { border-color: #198754; }
+        .border-red { border-color: #dc3545; }
+        .table { color: #ccc; }
+        .table-dark { --bs-table-bg: #1a1a1a; }
+        .btn-xs { padding: 2px 6px; font-size: 0.75rem; }
     </style>
 </head>
 <body>
 
     <!-- Login Overlay -->
     <div id="loginOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-black d-flex justify-content-center align-items-center" style="z-index: 9999;">
-        <div class="text-center">
-            <h2 class="text-danger mb-3">ADMIN ACCESS ONLY</h2>
-            <p id="authStatus" class="text-secondary small mb-3">กำลังเชื่อมต่อระบบ...</p> <!-- status text -->
-            <input type="password" id="adminPass" class="form-control text-center bg-dark text-white border-danger mb-2" placeholder="Enter Password">
-            <button id="unlockBtn" class="btn btn-danger w-100" onclick="checkAdmin()" disabled>Unlock</button>
+        <div class="text-center p-4 border border-danger rounded shadow-lg" style="background:#111; max-width:300px;">
+            <h4 class="text-danger mb-3"><i class="bi bi-shield-lock-fill"></i> ADMIN ONLY</h4>
+            <p id="authStatus" class="text-secondary small mb-3">Connecting...</p>
+            <input type="password" id="adminPass" class="form-control text-center bg-dark text-white border-danger mb-3" placeholder="Password">
+            <button id="unlockBtn" class="btn btn-danger w-100" onclick="checkAdmin()" disabled>ACCESS</button>
         </div>
     </div>
 
-    <div class="container py-4">
+    <div class="container-fluid px-4 py-4">
+        <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="text-danger"><i class="bi bi-shield-lock"></i> Admin Dashboard</h3>
-            <a href="index.html" class="btn btn-outline-secondary">กลับหน้าหลัก</a>
+            <div>
+                <h3 class="text-white fw-bold mb-0">ADMIN DASHBOARD</h3>
+                <small class="text-secondary">ระบบจัดการหลังบ้าน</small>
+            </div>
+            <a href="index.html" class="btn btn-outline-light btn-sm"><i class="bi bi-house"></i> หน้าหลัก</a>
+        </div>
+
+        <!-- 1. Stats Cards (สรุปยอด) -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card-stat border-blue">
+                    <h2 class="fw-bold mb-0" id="statUserCount">-</h2>
+                    <small class="text-secondary">USER ทั้งหมด</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-stat border-green">
+                    <h2 class="fw-bold mb-0" id="statActiveCount">-</h2>
+                    <small class="text-secondary">สินค้าที่กำลังขาย</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-stat border-red">
+                    <h2 class="fw-bold mb-0" id="statBannedCount">-</h2>
+                    <small class="text-secondary">โดนแบน</small>
+                </div>
+            </div>
         </div>
 
         <!-- Tabs -->
-        <ul class="nav nav-tabs border-secondary mb-3" id="adminTab" role="tablist">
+        <ul class="nav nav-tabs border-secondary mb-3">
             <li class="nav-item">
-                <button class="nav-link active text-warning bg-transparent" data-bs-toggle="tab" data-bs-target="#users-tab">จัดการ Users (แบน/ลบ)</button>
+                <button class="nav-link active text-warning bg-transparent" data-bs-toggle="tab" data-bs-target="#users-tab">👥 จัดการ Users</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link text-info bg-transparent" data-bs-toggle="tab" data-bs-target="#items-tab">จัดการสินค้า (ลบ)</button>
+                <button class="nav-link text-info bg-transparent" data-bs-toggle="tab" data-bs-target="#items-tab">📦 จัดการสินค้า</button>
             </li>
         </ul>
 
         <div class="tab-content">
-            <!-- TAB 1: USER MANAGEMENT -->
+            <!-- USERS TAB -->
             <div class="tab-pane fade show active" id="users-tab">
-                <div class="alert alert-dark border-secondary small text-secondary">
-                    <i class="bi bi-info-circle"></i> <b>การลบ User:</b> จะลบสินค้าที่ "กำลังขาย" ทั้งหมดของคนนั้นด้วย แต่สินค้าที่ "ขายแล้ว" จะเก็บไว้เป็นประวัติ
+                <div class="d-flex justify-content-between mb-3">
+                    <input type="text" id="searchUser" class="form-control form-control-sm bg-dark text-white border-secondary w-25" placeholder="🔍 ค้นหาชื่อ หรือ IP...">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadUsers()"><i class="bi bi-arrow-clockwise"></i> รีโหลด</button>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-dark table-striped border-secondary align-middle">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>IP Address</th>
-                                <th>Created</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="userTableBody">
-                            <tr><td colspan="5" class="text-center py-3">รอปลดล็อค...</td></tr>
-                        </tbody>
+                    <table class="table table-dark table-hover table-sm border-secondary align-middle">
+                        <thead><tr><th>Name</th><th>IP</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody id="userTableBody"><tr><td colspan="5" class="text-center py-3 text-muted">Waiting...</td></tr></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- TAB 2: ITEM MANAGEMENT -->
+            <!-- ITEMS TAB -->
             <div class="tab-pane fade" id="items-tab">
-                <div class="row g-3" id="adminProductList">
-                    <div class="col-12 text-center py-3">รอปลดล็อค...</div>
+                <div class="d-flex justify-content-between mb-3">
+                    <input type="text" id="searchItem" class="form-control form-control-sm bg-dark text-white border-secondary w-25" placeholder="🔍 ค้นหาชื่อสินค้า...">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadItems()"><i class="bi bi-arrow-clockwise"></i> รีโหลด</button>
                 </div>
+                <div class="row g-2" id="adminProductList"></div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, orderBy, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        // ✅ เพิ่ม Auth Imports
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { db, auth } from "./firebase-config.js";
+        import { collection, getDocs, doc, updateDoc, deleteDoc, orderBy, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // ==========================================
-        // ⚠️ วาง Firebase Config ของคุณตรงนี้!
-        // ==========================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyCQOSvE07bNi2WfCymRdOabDewgYRs4UM4",
-            authDomain: "auction-system-e9801.firebaseapp.com",
-            projectId: "auction-system-e9801",
-            storageBucket: "auction-v2-img-999", 
-            messagingSenderId: "1089558422014",
-            appId: "1:1089558422014:web:4052e4b6e8f391c5a5a0af"
-        };
+        // Global Data Cache (เพื่อการค้นหาที่รวดเร็ว)
+        let allUsers = [];
+        let allItems = [];
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app); // สร้าง Auth
+        signInAnonymously(auth).then(() => {
+            document.getElementById('authStatus').innerText = "Ready";
+            document.getElementById('authStatus').className = "text-success small mb-3";
+            document.getElementById('unlockBtn').disabled = false;
+        }).catch(e => {
+            document.getElementById('authStatus').innerText = e.message;
+        });
 
-        // --- 1. Login อัตโนมัติเบื้องหลัง ---
-        signInAnonymously(auth)
-            .then(() => {
-                console.log("Admin: Firebase Logged in");
-                // เปลี่ยนข้อความสถานะ และเปิดปุ่ม Unlock
-                document.getElementById('authStatus').innerText = "พร้อมใช้งาน";
-                document.getElementById('authStatus').className = "text-success small mb-3";
-                document.getElementById('unlockBtn').disabled = false;
-            })
-            .catch((error) => {
-                console.error("Admin Auth Error:", error);
-                document.getElementById('authStatus').innerText = "เชื่อมต่อไม่ได้: " + error.message;
-                document.getElementById('authStatus').className = "text-danger small mb-3";
-            });
-
-        // --- 2. ระบบล็อกอิน Admin (UI) ---
         window.checkAdmin = function() {
-            const pass = document.getElementById('adminPass').value;
-            // แก้รหัสผ่านตรงนี้
-            if(pass === "admin123") { 
+            if(document.getElementById('adminPass').value === "admin123") { 
                 document.getElementById('loginOverlay').classList.add('d-none');
-                loadUsers();
+                loadUsers(); 
                 loadItems();
-            } else {
-                alert("Wrong Password!");
-            }
+            } else { alert("Access Denied"); }
         }
 
-        // --- 3. โหลดรายชื่อ User ---
+        // --- USERS LOGIC ---
         async function loadUsers() {
-            const tableBody = document.getElementById('userTableBody');
-            tableBody.innerHTML = "<tr><td colspan='5' class='text-center py-3'>Loading...</td></tr>";
+            const q = query(collection(db, "users"), orderBy("created_at", "desc"));
+            const snapshot = await getDocs(q);
+            allUsers = [];
+            snapshot.forEach(doc => { allUsers.push({ id: doc.id, ...doc.data() }) });
             
-            try {
-                const q = query(collection(db, "users"), orderBy("created_at", "desc"));
-                const snapshot = await getDocs(q);
-                
-                tableBody.innerHTML = "";
-                snapshot.forEach(docSnap => {
-                    const u = docSnap.data();
-                    const isBanned = u.is_banned;
-                    const created = u.created_at ? new Date(u.created_at.seconds * 1000).toLocaleDateString() : "-";
-                    
-                    const html = `
-                        <tr>
-                            <td class="${isBanned ? 'text-decoration-line-through text-secondary' : 'text-white'} fw-bold">${u.displayName || 'No Name'}</td>
-                            <td class="text-secondary small">${u.ip_address || '-'}</td>
-                            <td class="small text-secondary">${created}</td>
-                            <td>${isBanned ? '<span class="badge bg-danger">BANNED</span>' : '<span class="badge bg-success">Active</span>'}</td>
-                            <td>
-                                <div class="btn-group">
-                                    <button class="btn btn-xs ${isBanned ? 'btn-outline-warning' : 'btn-outline-warning text-white'}" 
-                                        onclick="toggleBan('${docSnap.id}', ${isBanned})">
-                                        <i class="bi bi-slash-circle"></i> ${isBanned ? 'ปลดแบน' : 'แบน'}
-                                    </button>
-                                    <button class="btn btn-xs btn-outline-danger" 
-                                        onclick="deleteUser('${docSnap.id}', '${u.displayName || 'User'}')">
-                                        <i class="bi bi-trash"></i> ลบ
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += html;
-                });
-            } catch (e) {
-                console.error(e);
-                tableBody.innerHTML = `<tr><td colspan='5' class='text-center text-danger py-3'>Error: ${e.message}</td></tr>`;
-            }
+            updateStats();
+            renderUsers(allUsers);
         }
 
-        // --- 4. สั่งแบน/ปลดแบน ---
-        window.toggleBan = async function(uid, currentStatus) {
-            if(!confirm(currentStatus ? "ปลดแบน User นี้?" : "ยืนยันจะระงับการใช้งาน User นี้?")) return;
+        function renderUsers(users) {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = "";
+            users.forEach(u => {
+                const created = u.created_at ? new Date(u.created_at.seconds * 1000).toLocaleDateString() : "-";
+                const isBanned = u.is_banned;
+                const html = `
+                    <tr>
+                        <td class="${isBanned ? 'text-decoration-line-through text-muted' : 'text-white'} fw-bold">${u.displayName || 'No Name'}</td>
+                        <td class="text-secondary small">${u.ip_address || '-'}</td>
+                        <td class="small text-secondary">${created}</td>
+                        <td>${isBanned ? '<span class="badge bg-danger">BANNED</span>' : '<span class="badge bg-success">OK</span>'}</td>
+                        <td>
+                            <button class="btn btn-xs ${isBanned ? 'btn-warning' : 'btn-outline-warning'}" onclick="toggleBan('${u.id}', ${isBanned})">${isBanned ? 'UNBAN' : 'BAN'}</button>
+                            <button class="btn btn-xs btn-outline-danger" onclick="deleteUser('${u.id}', '${u.displayName}')">DEL</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += html;
+            });
+        }
+
+        // Search Users
+        document.getElementById('searchUser').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = allUsers.filter(u => 
+                (u.displayName && u.displayName.toLowerCase().includes(val)) || 
+                (u.ip_address && u.ip_address.includes(val))
+            );
+            renderUsers(filtered);
+        });
+
+        // --- ITEMS LOGIC ---
+        async function loadItems() {
+            const q = query(collection(db, "auctions"), orderBy("created_at", "desc"));
+            const snapshot = await getDocs(q);
+            allItems = [];
+            snapshot.forEach(doc => { allItems.push({ id: doc.id, ...doc.data() }) });
             
+            updateStats();
+            renderItems(allItems);
+        }
+
+        function renderItems(items) {
+            const container = document.getElementById('adminProductList');
+            container.innerHTML = "";
+            items.forEach(item => {
+                const isSold = item.status === 'sold';
+                const html = `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card p-2 d-flex flex-row align-items-center bg-dark border-secondary">
+                            ${isSold ? '<span class="badge bg-success position-absolute top-0 start-0 m-1">SOLD</span>' : ''}
+                            <img src="${item.image_url}" style="width:50px;height:50px;object-fit:cover" class="rounded me-3" onerror="this.src='https://via.placeholder.com/50'">
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div class="text-truncate text-white small fw-bold">${item.title}</div>
+                                <div class="text-secondary small">฿${item.current_price}</div>
+                            </div>
+                            <button class="btn btn-sm btn-danger" onclick="deleteItem('${item.id}')"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        // Search Items
+        document.getElementById('searchItem').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = allItems.filter(i => i.title.toLowerCase().includes(val));
+            renderItems(filtered);
+        });
+
+        // --- STATS ---
+        function updateStats() {
+            document.getElementById('statUserCount').innerText = allUsers.length;
+            document.getElementById('statBannedCount').innerText = allUsers.filter(u => u.is_banned).length;
+            document.getElementById('statActiveCount').innerText = allItems.filter(i => i.status !== 'sold').length;
+        }
+
+        // Actions (Copy จากเดิมได้เลย)
+        window.toggleBan = async function(uid, currentStatus) {
+            if(!confirm("ยืนยันเปลี่ยนสถานะ?")) return;
             await updateDoc(doc(db, "users", uid), { is_banned: !currentStatus });
-            alert("อัปเดตสถานะเรียบร้อย!");
             loadUsers();
         }
-
-        // --- 5. ลบ User (และสินค้าที่ Active) ---
         window.deleteUser = async function(uid, name) {
-            if(!confirm(`⚠️ คำเตือน!\nคุณต้องการลบผู้ใช้ "${name}" ใช่หรือไม่?\n\n- สินค้าที่ "กำลังขาย" จะถูกลบ\n- สินค้าที่ "ขายแล้ว" จะคงอยู่`)) return;
-
-            try {
-                const qItems = query(collection(db, "auctions"), where("seller_uid", "==", uid));
-                const itemSnaps = await getDocs(qItems);
-                
-                let deletedCount = 0;
-                const deletePromises = [];
-
-                itemSnaps.forEach(itemDoc => {
-                    const data = itemDoc.data();
-                    if(data.status !== 'sold') {
-                        deletePromises.push(deleteDoc(itemDoc.ref));
-                        deletedCount++;
-                    }
-                });
-
-                await Promise.all(deletePromises);
-                await deleteDoc(doc(db, "users", uid));
-
-                alert(`✅ ลบสำเร็จ!\n- User: ${name}\n- สินค้าที่ถูกลบ: ${deletedCount} รายการ`);
-                loadUsers();
-                loadItems();
-
-            } catch (error) {
-                console.error(error);
-                alert("Error: " + error.message);
-            }
+            if(!confirm(`ลบ ${name} และสินค้าที่กำลังขาย?`)) return;
+            const qItems = query(collection(db, "auctions"), where("seller_uid", "==", uid));
+            const itemSnaps = await getDocs(qItems);
+            const promises = [];
+            itemSnaps.forEach(d => { if(d.data().status !== 'sold') promises.push(deleteDoc(d.ref)); });
+            await Promise.all(promises);
+            await deleteDoc(doc(db, "users", uid));
+            loadUsers(); loadItems();
         }
-
-        // --- 6. โหลดสินค้า (Item Tab) ---
-        async function loadItems() {
-            const container = document.getElementById('adminProductList');
-            container.innerHTML = "<div class='col-12 text-center py-3'>Loading...</div>";
-
-            try {
-                const q = query(collection(db, "auctions"), orderBy("created_at", "desc"));
-                const snapshot = await getDocs(q);
-
-                container.innerHTML = "";
-                snapshot.forEach(docSnap => {
-                    const item = docSnap.data();
-                    const isSold = item.status === 'sold';
-                    
-                    const html = `
-                        <div class="col-md-6 col-lg-4">
-                            <div class="card p-2 d-flex flex-row align-items-center bg-dark border-secondary position-relative">
-                                ${isSold ? '<span class="position-absolute top-0 start-0 badge bg-success m-1">SOLD</span>' : ''}
-                                <img src="${item.image_url}" style="width: 60px; height: 60px; object-fit: cover;" class="rounded me-3" onerror="this.src='https://via.placeholder.com/60'">
-                                <div class="flex-grow-1 overflow-hidden">
-                                    <div class="text-truncate fw-bold text-white">${item.title}</div>
-                                    <div class="small text-secondary">ราคา: ${item.current_price}</div>
-                                </div>
-                                <button class="btn btn-sm btn-outline-danger ms-2" onclick="deleteItem('${docSnap.id}')">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    container.innerHTML += html;
-                });
-            } catch (e) {
-                container.innerHTML = `<div class='col-12 text-center text-danger py-3'>Error: ${e.message}</div>`;
-            }
-        }
-
-        // --- 7. ลบสินค้า ---
         window.deleteItem = async function(itemId) {
             if(!confirm("ลบสินค้านี้ถาวร?")) return;
             await deleteDoc(doc(db, "auctions", itemId));
             loadItems();
         }
-
     </script>
 </body>
 </html>
