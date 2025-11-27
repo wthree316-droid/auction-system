@@ -1,3 +1,5 @@
+// app.js - Final Version (Login/Logout + Seller Name + Modern UI Support)
+
 import { db, auth } from "./firebase-config.js";
 import { collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, query, orderBy, onSnapshot, limit, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { signInAnonymously, onAuthStateChanged, linkWithCredential, EmailAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -15,44 +17,85 @@ let unsubscribeProduct = null;
 let unsubscribeBids = null;
 
 // ==========================================
-// A. ระบบค้นหา
+// A. ระบบค้นหา & กรอง
 // ==========================================
 const searchInput = document.getElementById('searchInput');
-if(searchInput) {
-    searchInput.addEventListener('input', (e) => {
-        const keyword = e.target.value.toLowerCase();
-        const filtered = allProducts.filter(p => p.title.toLowerCase().includes(keyword));
-        renderProducts(filtered);
-    });
+const filterCategory = document.getElementById('filterCategory');
+const sortOption = document.getElementById('sortOption');
+
+if(searchInput) searchInput.addEventListener('input', applyFilters);
+if(filterCategory) filterCategory.addEventListener('change', applyFilters);
+if(sortOption) sortOption.addEventListener('change', applyFilters);
+
+function applyFilters() {
+    let result = [...allProducts];
+    const keyword = searchInput.value.toLowerCase();
+    if (keyword) result = result.filter(p => p.title.toLowerCase().includes(keyword));
+    
+    const category = filterCategory.value;
+    if (category && category !== 'all') result = result.filter(p => p.category === category);
+    
+    const sortBy = sortOption.value;
+    if (sortBy === 'newest') result.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+    else if (sortBy === 'ending_soon') {
+        const now = new Date().getTime();
+        result.sort((a, b) => (a.end_time_ms - now) - (b.end_time_ms - now));
+    } else if (sortBy === 'price_asc') {
+        result.sort((a, b) => a.current_price - b.current_price);
+    } else if (sortBy === 'price_desc') {
+        result.sort((a, b) => b.current_price - a.current_price);
+    }
+    
+    renderProducts(result);
 }
 
 function renderProducts(products) {
     const listContainer = document.getElementById('productList');
     if(!listContainer) return;
     listContainer.innerHTML = "";
+    
     if(products.length === 0) {
-        listContainer.innerHTML = "<p class='text-center text-secondary w-100 mt-5'>ไม่พบสินค้า</p>";
+        listContainer.innerHTML = `
+            <div class="col-12 text-center py-5 text-secondary opacity-50">
+                <i class="bi bi-inbox display-1"></i>
+                <p class="mt-3">ไม่พบสินค้าตามเงื่อนไข</p>
+            </div>`;
         return;
     }
+
     products.forEach(item => {
         const safeTitle = item.title.replace(/'/g, "\\'");
         const safeDesc = item.description ? item.description.replace(/'/g, "\\'").replace(/"/g, '&quot;') : "";
         const timerId = `timer-${item.id}`;
         const badgeId = `badge-${item.id}`;
         const endTime = item.end_time_ms || 0;
+        
         let soldOverlay = item.status === 'sold' ? `<div class="position-absolute top-50 start-50 translate-middle bg-danger text-white px-3 py-1 fw-bold fs-4 rotate-n15 border border-2 border-white opacity-75" style="transform: translate(-50%, -50%) rotate(-15deg); z-index:10;">SOLD</div>` : "";
         
         const catMap = { 'it': 'ไอที', 'fashion': 'แฟชั่น', 'amulet': 'พระเครื่อง', 'home': 'ของใช้', 'other': 'อื่นๆ' };
         const catName = catMap[item.category] || 'อื่นๆ';
 
+        // 🔥 ดึงชื่อผู้ขายมาแสดง
+        const sellerName = item.seller_name || "ผู้ขาย";
+
         const html = `
             <div class="col-6 col-md-4 col-lg-3">
-                <div class="card h-100 cursor-pointer position-relative" onclick="openAuction('${item.id}', '${safeTitle}', '${item.current_price}', '${item.image_url}', \`${safeDesc}\`)" style="cursor: pointer;">
+                <div class="card h-100 cursor-pointer position-relative card-custom" onclick="openAuction('${item.id}', '${safeTitle}', '${item.current_price}', '${item.image_url}', \`${safeDesc}\`)" style="cursor: pointer;">
                     ${soldOverlay}
-                    <div class="position-absolute top-0 start-0 p-2"><span class="badge bg-dark border border-secondary text-secondary">${catName}</span></div>
+                    <div class="position-absolute top-0 start-0 p-2"><span class="badge badge-glass text-white">${catName}</span></div>
                     <div class="position-absolute top-0 end-0 p-2"><span id="${badgeId}" class="badge bg-warning text-dark shadow"><i class="bi bi-clock"></i> <span id="${timerId}" class="card-timer" data-end-time="${endTime}">--:--</span></span></div>
-                    <img src="${item.image_url}" class="card-img-top product-img-list" alt="${item.title}">
-                    <div class="card-body p-2"><h6 class="card-title text-truncate">${item.title}</h6><p class="card-text text-danger fw-bold">฿${item.current_price.toLocaleString()}</p></div>
+                    
+                    <div class="product-img-wrapper"><img src="${item.image_url}" class="product-img-list" alt="${item.title}"></div>
+                    
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-truncate mb-1 fw-bold text-white">${item.title}</h6>
+                        <p class="card-text text-danger fw-bold mb-2 h5">฿${item.current_price.toLocaleString()}</p>
+                        
+                        <div class="d-flex align-items-center gap-2 pt-2 border-top border-secondary mt-2">
+                            <i class="bi bi-person-circle text-secondary"></i>
+                            <small class="text-secondary text-truncate" style="max-width: 100px;">${sellerName}</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -60,13 +103,10 @@ function renderProducts(products) {
     });
 }
 
-// ==========================================
-// B. Dashboard
-// ==========================================
+// ... (Dashboard Logic - คงเดิม) ...
 window.openDashboardModal = async function() {
     new bootstrap.Modal(document.getElementById('dashboardModal')).show();
     if(!currentUser) return;
-    
     const mySellingContainer = document.getElementById('mySellingList');
     mySellingContainer.innerHTML = "<p class='text-center w-100 small text-secondary py-3'>กำลังโหลด...</p>";
     const myItems = allProducts.filter(p => p.seller_uid === currentUser.uid);
@@ -76,24 +116,19 @@ window.openDashboardModal = async function() {
         const statusBadge = item.status === 'sold' ? '<span class="badge bg-success">ขายแล้ว</span>' : '<span class="badge bg-primary">กำลังขาย</span>';
         mySellingContainer.innerHTML += `<div class="col-12 col-md-6"><div class="border border-secondary p-2 rounded bg-black d-flex gap-3 align-items-center" onclick="openAuction('${item.id}', '${item.title}', '${item.current_price}', '${item.image_url}', '')" style="cursor:pointer"><img src="${item.image_url}" style="width:60px; height:60px; object-fit:cover" class="rounded border border-secondary"><div style="overflow:hidden" class="flex-grow-1"><div class="text-truncate fw-bold text-white">${item.title}</div><div class="d-flex justify-content-between align-items-center mt-1"><span class="text-warning fw-bold">฿${item.current_price.toLocaleString()}</span>${statusBadge}</div></div></div></div>`;
     });
-
     const myBiddingContainer = document.getElementById('myBiddingList');
     myBiddingContainer.innerHTML = `<div class="col-12 text-center py-5"><div class="spinner-border text-info" role="status"></div><p class="text-info mt-2 small">กำลังไล่เช็คลำดับของคุณ...</p></div>`;
-
+    // ... (Ranking Logic omitted for brevity, same as before) ...
+    // ถ้าต้องการ Full Code ส่วนนี้บอกได้ครับ แต่หลักการเดิม
     const biddingPromises = allProducts.map(async (item) => {
         if (item.seller_uid === currentUser.uid) return null;
-        if (item.last_bidder_uid === currentUser.uid || item.buyer_uid === currentUser.uid) {
-            return { item: item, myRank: 1, myMaxBid: item.current_price, isWinner: item.status === 'sold' && item.buyer_uid === currentUser.uid };
-        }
+        if (item.last_bidder_uid === currentUser.uid || item.buyer_uid === currentUser.uid) { return { item: item, myRank: 1, myMaxBid: item.current_price, isWinner: item.status === 'sold' && item.buyer_uid === currentUser.uid }; }
         try {
             const bidsRef = collection(db, "auctions", item.id, "bids");
             const bidsSnap = await getDocs(bidsRef);
             if (bidsSnap.empty) return null;
             const allBidders = {};
-            bidsSnap.forEach(doc => {
-                const b = doc.data();
-                if (!allBidders[b.bidder_uid] || b.amount > allBidders[b.bidder_uid]) { allBidders[b.bidder_uid] = b.amount; }
-            });
+            bidsSnap.forEach(doc => { const b = doc.data(); if (!allBidders[b.bidder_uid] || b.amount > allBidders[b.bidder_uid]) { allBidders[b.bidder_uid] = b.amount; } });
             if (!allBidders[currentUser.uid]) return null;
             const sortedRanks = Object.keys(allBidders).sort((a, b) => allBidders[b] - allBidders[a]);
             const myRank = sortedRanks.indexOf(currentUser.uid) + 1;
@@ -101,17 +136,11 @@ window.openDashboardModal = async function() {
             return { item: item, myRank: myRank, myMaxBid: myMaxBid, isWinner: false };
         } catch (e) { return null; }
     });
-
     const results = await Promise.all(biddingPromises);
     const myParticipatingItems = results.filter(r => r !== null);
-
     myBiddingContainer.innerHTML = "";
-    if (myParticipatingItems.length === 0) {
-        myBiddingContainer.innerHTML = "<p class='text-center w-100 small text-secondary py-3'>คุณยังไม่ได้ร่วมประมูลสินค้าใดๆ</p>";
-        return;
-    }
+    if (myParticipatingItems.length === 0) { myBiddingContainer.innerHTML = "<p class='text-center w-100 small text-secondary py-3'>คุณยังไม่ได้ร่วมประมูลสินค้าใดๆ</p>"; return; }
     myParticipatingItems.sort((a, b) => a.myRank - b.myRank);
-
     myParticipatingItems.forEach(data => {
         const { item, myRank, myMaxBid, isWinner } = data;
         let rankClass = "rank-other", rankText = `ลำดับที่ ${myRank}`;
@@ -122,7 +151,6 @@ window.openDashboardModal = async function() {
         const isSold = item.status === 'sold';
         const statusMsg = isSold ? (isWinner ? "จบแล้ว (คุณได้ของ)" : "จบแล้ว (แพ้)") : "กำลังแข่ง...";
         const cardBorder = isWinner ? "border-success" : (myRank === 1 ? "border-warning" : "border-secondary");
-
         myBiddingContainer.innerHTML += `<div class="col-12 col-md-6"><div class="border ${cardBorder} p-2 rounded bg-black d-flex gap-3 align-items-center position-relative" onclick="openAuction('${item.id}', '${item.title}', '${item.current_price}', '${item.image_url}', '')" style="cursor:pointer"><img src="${item.image_url}" style="width:70px; height:70px; object-fit:cover" class="rounded"><div style="overflow:hidden" class="flex-grow-1"><div class="text-truncate fw-bold text-white mb-1">${item.title}</div><div class="d-flex justify-content-between align-items-center"><div><span class="rank-badge ${rankClass}">${rankText}</span></div><div class="text-end"><div class="small text-secondary" style="font-size:0.7rem;">ราคาปัจจุบัน</div><div class="text-danger fw-bold">฿${item.current_price.toLocaleString()}</div></div></div><div class="d-flex justify-content-between align-items-center mt-2 border-top border-secondary pt-1"><span class="small text-secondary" style="font-size:0.75rem;">${statusMsg}</span><span class="small text-muted" style="font-size:0.75rem;">เสนอไป: ฿${myMaxBid.toLocaleString()}</span></div></div></div></div>`;
     });
 }
@@ -141,43 +169,27 @@ async function loadProducts() {
             data.id = doc.id;
             allProducts.push(data);
         });
-        const searchEl = document.getElementById('searchInput');
-        const keyword = searchEl ? searchEl.value.toLowerCase() : "";
-        if(keyword) {
-            const filtered = allProducts.filter(p => p.title.toLowerCase().includes(keyword));
-            renderProducts(filtered);
-        } else { renderProducts(allProducts); }
+        applyFilters();
     });
 }
 loadProducts();
 
 // ==========================================
-// D. Auth & User Profile
+// D. Auth, Login, Logout
 // ==========================================
 function generateRandomCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 13; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+    let result = ''; for (let i = 0; i < 13; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); } return result;
 }
 
-// Auto Login (Anonymous)
 async function initSystem() {
-    try {
-        const res = await fetch('https://api.ipify.org?format=json');
-        const data = await res.json();
-        currentIp = data.ip;
-    } catch (e) { }
-    
+    try { const res = await fetch('https://api.ipify.org?format=json'); const data = await res.json(); currentIp = data.ip; } catch (e) { }
     signInAnonymously(auth).catch((error) => console.error("Login Error:", error));
 }
 initSystem();
 
-// 🔥 Logout Function
 window.logoutSystem = async function() {
-    if(!confirm("ต้องการออกจากระบบ?")) return;
+    if(!confirm("ยืนยันการออกจากระบบ?")) return;
     await signOut(auth);
     window.location.reload(); 
 }
@@ -186,7 +198,7 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
         
-        // --- UI Button Switcher ---
+        // Toggle Button Login/Logout
         const btnLogin = document.getElementById('btnLogin');
         const btnLogout = document.getElementById('btnLogout');
         
@@ -197,28 +209,17 @@ onAuthStateChanged(auth, async (user) => {
             if(btnLogin) btnLogin.classList.add('d-none');
             if(btnLogout) btnLogout.classList.remove('d-none');
         }
-        // -------------------------
 
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
-            onSnapshot(userRef, (docSnap) => {
-                if (docSnap.exists()) setupUserProfile(docSnap.data());
-            });
+            onSnapshot(userRef, (docSnap) => { if (docSnap.exists()) setupUserProfile(docSnap.data()); });
         } else {
-            // ✅ ปลดล็อก: ไม่เช็ค IP แล้ว สร้าง User ใหม่ได้เลยแม้ IP ซ้ำ
+            // Create New User (No IP Check)
             const defaultName = "User_" + user.uid.slice(0,4);
             const autoSecret = generateRandomCode(); 
-            
-            await setDoc(userRef, { 
-                displayName: defaultName, 
-                uid: user.uid, 
-                secret_code: autoSecret, 
-                ip_address: currentIp, // ยังเก็บ IP ไว้เป็นข้อมูล Admin แต่ไม่เอามาบล็อก
-                contact_email: user.email || "", 
-                created_at: new Date() 
-            });
+            await setDoc(userRef, { displayName: defaultName, uid: user.uid, secret_code: autoSecret, ip_address: currentIp, contact_email: user.email || "", created_at: new Date() });
             onSnapshot(userRef, (docSnap) => { if (docSnap.exists()) setupUserProfile(docSnap.data()); });
         }
     }
@@ -242,7 +243,7 @@ function setupUserProfile(data) {
 function updateUIName(name) { const el = document.getElementById('navUsername'); if(el) el.innerText = name; }
 
 // ==========================================
-// E. Timer
+// E. Timer & Modal Display
 // ==========================================
 setInterval(() => {
     if (currentProductEndTime && document.getElementById('auctionModal').classList.contains('show')) { updateTimerUI(currentProductEndTime, 'modalTimer', 'modalTimerBadge', true); }
@@ -280,24 +281,29 @@ function updateTimerUI(endTimeMs, textId, badgeId, isModal) {
     }
 }
 
-// ... (Modal & Actions) ...
+// ==========================================
+// F. Modal Open & View (Update for new Layout)
+// ==========================================
 window.openAuction = function(id, title, price, img, desc) {
     currentProductId = id;
+    
     document.getElementById('modalTitle').innerText = title;
     document.getElementById('modalImage').src = img;
     document.getElementById('modalDesc').innerText = desc;
     document.getElementById('bidInput').value = "";
-    document.getElementById('bidHistoryList').innerHTML = "<div class='text-center small mt-4'><div class='spinner-border spinner-border-sm'></div> กำลังโหลด...</div>";
+    document.getElementById('bidHistoryList').innerHTML = "<div class='text-center small mt-4 text-secondary'>กำลังโหลดประวัติ...</div>";
+    
+    // Reset Display
     document.getElementById('bidControlSection').classList.remove('d-none');
     document.getElementById('auctionEndedMsg').classList.add('d-none');
     document.getElementById('soldMsg').classList.add('d-none');
     document.getElementById('soldBadge').classList.add('d-none');
     document.getElementById('buyNowSection').classList.add('d-none');
-    document.getElementById('modalSellerName').innerText = "...";
     document.getElementById('modalEmailLink').classList.add('d-none');
     document.getElementById('modalEditBtn').classList.add('d-none');
     
-    document.getElementById('modalCategoryBadge').innerText = "หมวดหมู่";
+    // Reset Seller Name
+    document.getElementById('modalSellerName').innerText = "กำลังโหลด...";
 
     if (unsubscribeProduct) unsubscribeProduct();
     if (unsubscribeBids) unsubscribeBids();
@@ -307,20 +313,30 @@ window.openAuction = function(id, title, price, img, desc) {
             const data = docSnapshot.data();
             document.getElementById('modalPrice').innerText = `฿${data.current_price.toLocaleString()}`;
             if(data.end_time_ms) currentProductEndTime = data.end_time_ms;
+            
             if(data.contact_email) {
-                document.getElementById('modalEmail').innerText = data.contact_email;
                 document.getElementById('modalEmailLink').href = `mailto:${data.contact_email}`;
                 document.getElementById('modalEmailLink').classList.remove('d-none');
             }
+            
             const catMap = { 'it': 'ไอที', 'fashion': 'แฟชั่น', 'amulet': 'พระเครื่อง', 'home': 'ของใช้', 'other': 'อื่นๆ' };
-            document.getElementById('modalCategoryBadge').innerText = catMap[data.category] || 'อื่นๆ';
+            document.getElementById('modalCategoryBadge').innerText = catMap[data.category] || 'สินค้าทั่วไป';
 
-            if(data.seller_uid) {
+            // 🔥 Seller Name
+            if (data.seller_name) {
+                document.getElementById('modalSellerName').innerText = data.seller_name;
+            } else if(data.seller_uid) {
                 getDoc(doc(db, "users", data.seller_uid)).then(uSnap => {
                     if(uSnap.exists()) document.getElementById('modalSellerName').innerText = uSnap.data().displayName;
                 });
-                if (currentUser && currentUser.uid === data.seller_uid && data.status !== 'sold') { document.getElementById('modalEditBtn').classList.remove('d-none'); } else { document.getElementById('modalEditBtn').classList.add('d-none'); }
             }
+
+            if (currentUser && currentUser.uid === data.seller_uid && data.status !== 'sold') {
+                document.getElementById('modalEditBtn').classList.remove('d-none');
+            } else {
+                document.getElementById('modalEditBtn').classList.add('d-none');
+            }
+
             if (data.status === 'sold') {
                 document.getElementById('soldBadge').classList.remove('d-none');
                 document.getElementById('soldMsg').classList.remove('d-none');
@@ -337,24 +353,81 @@ window.openAuction = function(id, title, price, img, desc) {
             }
         }
     });
+
     const bidsRef = collection(db, "auctions", id, "bids");
     const q = query(bidsRef, orderBy("amount", "desc"), limit(20));
     unsubscribeBids = onSnapshot(q, (snapshot) => {
         const historyList = document.getElementById('bidHistoryList');
+        if(document.getElementById('bidCount')) document.getElementById('bidCount').innerText = snapshot.size;
+        
         historyList.innerHTML = "";
-        if (snapshot.empty) { historyList.innerHTML = "<div class='text-center text-secondary small mt-4'>ยังไม่มีใครเสนอราคา<br>คุณเริ่มคนแรกเลย!</div>"; } 
-        else {
+        if (snapshot.empty) {
+            historyList.innerHTML = "<div class='text-center text-secondary small mt-4'>ยังไม่มีข้อเสนอ<br>เป็นคนแรกสิ!</div>";
+        } else {
             snapshot.forEach((doc) => {
                 const bid = doc.data();
-                const timeStr = bid.timestamp ? new Date(bid.timestamp.seconds * 1000).toLocaleTimeString('th-TH') : "";
-                const html = `<div class="bid-history-item d-flex justify-content-between"><div><span class="text-white fw-bold">${bid.bidder_name}</span><span class="text-secondary small ms-2">(${timeStr})</span></div><div class="text-danger fw-bold">฿${bid.amount.toLocaleString()}</div></div>`;
+                const timeStr = bid.timestamp ? new Date(bid.timestamp.seconds * 1000).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}) : "";
+                const html = `
+                    <div class="bid-history-item d-flex justify-content-between border-bottom border-secondary py-2 px-2 align-items-center" style="border-color: #333 !important;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-circle text-secondary"></i>
+                            <div>
+                                <div class="text-white fw-bold small">${bid.bidder_name}</div>
+                                <small class="text-secondary" style="font-size: 0.65rem;">${timeStr}</small>
+                            </div>
+                        </div>
+                        <div class="text-success fw-bold">฿${bid.amount.toLocaleString()}</div>
+                    </div>`;
                 historyList.innerHTML += html;
             });
         }
     });
     new bootstrap.Modal(document.getElementById('auctionModal')).show();
 }
-document.getElementById('auctionModal').addEventListener('hidden.bs.modal', () => { if (unsubscribeProduct) unsubscribeProduct(); if (unsubscribeBids) unsubscribeBids(); currentProductEndTime = null; });
+
+document.getElementById('auctionModal').addEventListener('hidden.bs.modal', () => {
+    if (unsubscribeProduct) unsubscribeProduct();
+    if (unsubscribeBids) unsubscribeBids();
+    currentProductEndTime = null;
+});
+
+// ... (Edit, Add, Profile, Recover Logic เหมือนเดิม) ...
+
+const addForm = document.getElementById('addItemForm');
+if(addForm) {
+    addForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if(checkBan()) return;
+        
+        const title = document.getElementById('inpTitle').value;
+        const desc = document.getElementById('inpDesc').value;
+        const price = Number(document.getElementById('inpPrice').value);
+        const buyNowPrice = document.getElementById('inpBuyNowPrice').value ? Number(document.getElementById('inpBuyNowPrice').value) : null;
+        const email = document.getElementById('inpEmail').value.trim();
+        const imageUrl = document.getElementById('inpFile').value;
+        const endTimeInput = document.getElementById('inpEndTime').value;
+        const category = document.getElementById('inpCategory').value;
+        
+        if (!category) return alert("กรุณาเลือกหมวดหมู่");
+        if (!email) return alert("กรุณาระบุอีเมล");
+        if (!endTimeInput) return alert("ระบุเวลาปิด");
+
+        const endTimeMs = new Date(endTimeInput).getTime();
+        const myName = document.getElementById('navUsername').innerText; // Get current name
+
+        try {
+            toggleLoading(true);
+            await addDoc(collection(db, "auctions"), {
+                title: title, category: category, description: desc, current_price: price, buy_now_price: buyNowPrice,
+                contact_email: email, image_url: imageUrl, status: 'active', 
+                seller_uid: currentUser.uid, 
+                seller_name: myName, // 🔥 บันทึกชื่อคนขาย
+                end_time_ms: endTimeMs, created_at: new Date()
+            });
+            toggleLoading(false); alert("ลงสินค้าเรียบร้อย!"); location.reload(); 
+        } catch (error) { toggleLoading(false); alert("Error: " + error.message); }
+    });
+}
 
 window.openEditModal = async function() {
     if(!currentProductId) return;
@@ -399,9 +472,9 @@ if(editForm) {
         } catch(e) { alert("Error: " + e.message); }
     });
 }
-
 window.placeBid = async function() {
     if(checkBan()) return;
+    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อนใช้งาน");
     const bidInput = document.getElementById('bidInput');
     const bidAmount = Number(bidInput.value);
     if(!bidAmount || bidAmount <= 0) return alert("กรุณาใส่ราคา");
@@ -421,9 +494,9 @@ window.placeBid = async function() {
         }
     } catch (error) { alert("Error: " + error.message); }
 }
-
 window.buyNow = async function() {
     if(checkBan()) return;
+    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อนใช้งาน");
     if(!confirm("ยืนยันการซื้อสดสินค้าชิ้นนี้?")) return;
     try {
         const productRef = doc(db, "auctions", currentProductId);
@@ -438,9 +511,9 @@ window.buyNow = async function() {
         }
     } catch (error) { alert("Error: " + error.message); }
 }
-
 window.openAddModal = function() {
     if(checkBan()) return;
+    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อนใช้งาน");
     document.getElementById('addItemForm').reset();
     setupProfileCheckbox('chkProfileEmail', userProfileCache.contact_email);
     if(userProfileCache.contact_email) document.getElementById('chkProfileEmail').click();
@@ -457,34 +530,6 @@ window.toggleContactInput = function(chkId, inputId, dataKey) {
     if (isChecked) { inputEl.value = userProfileCache[dataKey] || ""; inputEl.readOnly = true; inputEl.classList.add('bg-secondary', 'text-white'); } 
     else { inputEl.value = ""; inputEl.readOnly = false; inputEl.classList.remove('bg-secondary', 'text-white'); }
 }
-const addForm = document.getElementById('addItemForm');
-if(addForm) {
-    addForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if(checkBan()) return;
-        const title = document.getElementById('inpTitle').value;
-        const desc = document.getElementById('inpDesc').value;
-        const price = Number(document.getElementById('inpPrice').value);
-        const buyNowPrice = document.getElementById('inpBuyNowPrice').value ? Number(document.getElementById('inpBuyNowPrice').value) : null;
-        const email = document.getElementById('inpEmail').value.trim();
-        const imageUrl = document.getElementById('inpFile').value;
-        const endTimeInput = document.getElementById('inpEndTime').value;
-        if (!email) return alert("กรุณาระบุอีเมลสำหรับติดต่อ");
-        if(!endTimeInput) return alert("กรุณาระบุเวลาปิดประมูล");
-        const endTimeMs = new Date(endTimeInput).getTime();
-        try {
-            toggleLoading(true);
-            await addDoc(collection(db, "auctions"), {
-                title: title, description: desc, current_price: price, buy_now_price: buyNowPrice,
-                contact_email: email,
-                status: 'active', image_url: imageUrl, seller_uid: currentUser.uid,
-                end_time_ms: endTimeMs, created_at: new Date()
-            });
-            toggleLoading(false); alert("ลงสินค้าเรียบร้อย!"); location.reload(); 
-        } catch (error) { toggleLoading(false); alert("Error: " + error.message); }
-    });
-}
-
 window.openProfileModal = function() {
     if(!currentUser) return;
     document.getElementById('profileNameInput').value = document.getElementById('navUsername').innerText;
