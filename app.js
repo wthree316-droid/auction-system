@@ -1,8 +1,5 @@
-// app.js - Final Version + Login/Logout + IP Lock Strict
-
 import { db, auth } from "./firebase-config.js";
 import { collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, query, orderBy, onSnapshot, limit, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-// เพิ่ม signOut
 import { signInAnonymously, onAuthStateChanged, linkWithCredential, EmailAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // Variables
@@ -18,38 +15,15 @@ let unsubscribeProduct = null;
 let unsubscribeBids = null;
 
 // ==========================================
-// A. ระบบค้นหา & กรอง
+// A. ระบบค้นหา
 // ==========================================
 const searchInput = document.getElementById('searchInput');
-const filterCategory = document.getElementById('filterCategory');
-const sortOption = document.getElementById('sortOption');
-
-if(searchInput) searchInput.addEventListener('input', applyFilters);
-if(filterCategory) filterCategory.addEventListener('change', applyFilters);
-if(sortOption) sortOption.addEventListener('change', applyFilters);
-
-function applyFilters() {
-    let result = [...allProducts];
-    const keyword = searchInput.value.toLowerCase();
-    if (keyword) result = result.filter(p => p.title.toLowerCase().includes(keyword));
-    const category = filterCategory.value;
-    if (category && category !== 'all') result = result.filter(p => p.category === category);
-    const sortBy = sortOption.value;
-    if (sortBy === 'newest') result.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
-    else if (sortBy === 'oldest') result.sort((a, b) => (a.created_at?.seconds || 0) - (b.created_at?.seconds || 0));
-    else if (sortBy === 'price_asc') result.sort((a, b) => a.current_price - b.current_price);
-    else if (sortBy === 'price_desc') result.sort((a, b) => b.current_price - a.current_price);
-    else if (sortBy === 'ending_soon') {
-        const now = new Date().getTime();
-        result.sort((a, b) => {
-            const timeA = a.end_time_ms - now;
-            const timeB = b.end_time_ms - now;
-            if (timeA < 0) return 1;
-            if (timeB < 0) return -1;
-            return timeA - timeB;
-        });
-    }
-    renderProducts(result);
+if(searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        const keyword = e.target.value.toLowerCase();
+        const filtered = allProducts.filter(p => p.title.toLowerCase().includes(keyword));
+        renderProducts(filtered);
+    });
 }
 
 function renderProducts(products) {
@@ -87,7 +61,7 @@ function renderProducts(products) {
 }
 
 // ==========================================
-// B. Dashboard (Ranking Logic)
+// B. Dashboard
 // ==========================================
 window.openDashboardModal = async function() {
     new bootstrap.Modal(document.getElementById('dashboardModal')).show();
@@ -148,6 +122,7 @@ window.openDashboardModal = async function() {
         const isSold = item.status === 'sold';
         const statusMsg = isSold ? (isWinner ? "จบแล้ว (คุณได้ของ)" : "จบแล้ว (แพ้)") : "กำลังแข่ง...";
         const cardBorder = isWinner ? "border-success" : (myRank === 1 ? "border-warning" : "border-secondary");
+
         myBiddingContainer.innerHTML += `<div class="col-12 col-md-6"><div class="border ${cardBorder} p-2 rounded bg-black d-flex gap-3 align-items-center position-relative" onclick="openAuction('${item.id}', '${item.title}', '${item.current_price}', '${item.image_url}', '')" style="cursor:pointer"><img src="${item.image_url}" style="width:70px; height:70px; object-fit:cover" class="rounded"><div style="overflow:hidden" class="flex-grow-1"><div class="text-truncate fw-bold text-white mb-1">${item.title}</div><div class="d-flex justify-content-between align-items-center"><div><span class="rank-badge ${rankClass}">${rankText}</span></div><div class="text-end"><div class="small text-secondary" style="font-size:0.7rem;">ราคาปัจจุบัน</div><div class="text-danger fw-bold">฿${item.current_price.toLocaleString()}</div></div></div><div class="d-flex justify-content-between align-items-center mt-2 border-top border-secondary pt-1"><span class="small text-secondary" style="font-size:0.75rem;">${statusMsg}</span><span class="small text-muted" style="font-size:0.75rem;">เสนอไป: ฿${myMaxBid.toLocaleString()}</span></div></div></div></div>`;
     });
 }
@@ -166,13 +141,18 @@ async function loadProducts() {
             data.id = doc.id;
             allProducts.push(data);
         });
-        applyFilters();
+        const searchEl = document.getElementById('searchInput');
+        const keyword = searchEl ? searchEl.value.toLowerCase() : "";
+        if(keyword) {
+            const filtered = allProducts.filter(p => p.title.toLowerCase().includes(keyword));
+            renderProducts(filtered);
+        } else { renderProducts(allProducts); }
     });
 }
 loadProducts();
 
 // ==========================================
-// 🔥 D. Auth & IP Lock & Login Logic (Updated)
+// D. Auth & User Profile
 // ==========================================
 function generateRandomCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -190,7 +170,7 @@ async function initSystem() {
         const data = await res.json();
         currentIp = data.ip;
     } catch (e) { }
-    // สั่ง Login ถ้าไม่มี Session
+    
     signInAnonymously(auth).catch((error) => console.error("Login Error:", error));
 }
 initSystem();
@@ -210,8 +190,6 @@ onAuthStateChanged(auth, async (user) => {
         const btnLogin = document.getElementById('btnLogin');
         const btnLogout = document.getElementById('btnLogout');
         
-        // ถ้าเป็น Guest -> โชว์ Login
-        // ถ้าเป็น Member (มีเมล) -> โชว์ Logout
         if (user.isAnonymous) {
             if(btnLogin) btnLogin.classList.remove('d-none');
             if(btnLogout) btnLogout.classList.add('d-none');
@@ -229,20 +207,7 @@ onAuthStateChanged(auth, async (user) => {
                 if (docSnap.exists()) setupUserProfile(docSnap.data());
             });
         } else {
-            // เช็ค IP ซ้ำ เฉพาะ Anonymous
-            if (user.isAnonymous) {
-                const usersRef = collection(db, "users");
-                const qIp = query(usersRef, where("ip_address", "==", currentIp));
-                const ipSnap = await getDocs(qIp);
-
-                if (!ipSnap.empty) {
-                    const existingUser = ipSnap.docs[0].data();
-                    alert(`⚠️ IP ของคุณ (${currentIp}) มีบัญชีแล้วชื่อ "${existingUser.displayName}"\nกรุณาใช้การย้ายเครื่อง หรือกดปุ่ม Login เพื่อเข้าสู่ระบบ`);
-                    updateUIName("Guest (IP ซ้ำ)");
-                    return; 
-                }
-            }
-
+            // ✅ ปลดล็อก: ไม่เช็ค IP แล้ว สร้าง User ใหม่ได้เลยแม้ IP ซ้ำ
             const defaultName = "User_" + user.uid.slice(0,4);
             const autoSecret = generateRandomCode(); 
             
@@ -250,7 +215,7 @@ onAuthStateChanged(auth, async (user) => {
                 displayName: defaultName, 
                 uid: user.uid, 
                 secret_code: autoSecret, 
-                ip_address: currentIp, 
+                ip_address: currentIp, // ยังเก็บ IP ไว้เป็นข้อมูล Admin แต่ไม่เอามาบล็อก
                 contact_email: user.email || "", 
                 created_at: new Date() 
             });
@@ -263,6 +228,7 @@ function setupUserProfile(data) {
     userProfileCache = data;
     isBanned = data.is_banned;
     updateUIName(data.displayName);
+    
     if(document.getElementById('profileSecretCode')) {
         document.getElementById('profileSecretCode').value = data.secret_code || "";
         document.getElementById('profileEmail').value = data.contact_email || ""; 
@@ -314,7 +280,7 @@ function updateTimerUI(endTimeMs, textId, badgeId, isModal) {
     }
 }
 
-// ... (Modal & Actions เหมือนเดิม) ...
+// ... (Modal & Actions) ...
 window.openAuction = function(id, title, price, img, desc) {
     currentProductId = id;
     document.getElementById('modalTitle').innerText = title;
@@ -436,7 +402,6 @@ if(editForm) {
 
 window.placeBid = async function() {
     if(checkBan()) return;
-    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อนใช้งาน");
     const bidInput = document.getElementById('bidInput');
     const bidAmount = Number(bidInput.value);
     if(!bidAmount || bidAmount <= 0) return alert("กรุณาใส่ราคา");
@@ -459,7 +424,6 @@ window.placeBid = async function() {
 
 window.buyNow = async function() {
     if(checkBan()) return;
-    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อนใช้งาน");
     if(!confirm("ยืนยันการซื้อสดสินค้าชิ้นนี้?")) return;
     try {
         const productRef = doc(db, "auctions", currentProductId);
@@ -477,7 +441,6 @@ window.buyNow = async function() {
 
 window.openAddModal = function() {
     if(checkBan()) return;
-    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อนใช้งาน");
     document.getElementById('addItemForm').reset();
     setupProfileCheckbox('chkProfileEmail', userProfileCache.contact_email);
     if(userProfileCache.contact_email) document.getElementById('chkProfileEmail').click();
@@ -506,16 +469,13 @@ if(addForm) {
         const email = document.getElementById('inpEmail').value.trim();
         const imageUrl = document.getElementById('inpFile').value;
         const endTimeInput = document.getElementById('inpEndTime').value;
-        const category = document.getElementById('inpCategory').value;
-        
-        if (!category) return alert("กรุณาเลือกหมวดหมู่");
         if (!email) return alert("กรุณาระบุอีเมลสำหรับติดต่อ");
         if(!endTimeInput) return alert("กรุณาระบุเวลาปิดประมูล");
         const endTimeMs = new Date(endTimeInput).getTime();
         try {
             toggleLoading(true);
             await addDoc(collection(db, "auctions"), {
-                title: title, category: category, description: desc, current_price: price, buy_now_price: buyNowPrice,
+                title: title, description: desc, current_price: price, buy_now_price: buyNowPrice,
                 contact_email: email,
                 status: 'active', image_url: imageUrl, seller_uid: currentUser.uid,
                 end_time_ms: endTimeMs, created_at: new Date()
