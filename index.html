@@ -19,7 +19,9 @@
             --secondary-color: #ffb703;
             --dark-bg: #0f0f0f;
             --card-bg: rgba(30, 30, 30, 0.7);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.15); /* เพิ่มความชัดของขอบ */
+            --glass-border: 1px solid rgba(255, 255, 255, 0.15);
+            --input-bg: rgba(255, 255, 255, 0.07);
+            --input-hover: rgba(255, 255, 255, 0.12);
         }
 
         body { 
@@ -45,63 +47,61 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
         }
 
-        /* --- Enhanced Inputs & Selects --- */
-        .input-group-glass {
-            background: rgba(255, 255, 255, 0.05);
+        /* --- 🔥 CUSTOM INPUTS & SELECTS (ดีไซน์ใหม่) --- */
+        
+        /* 1. Search Box Style */
+        .input-group-custom {
+            background-color: var(--input-bg);
             border: var(--glass-border);
-            border-radius: 50px !important; /* ทรงแคปซูล */
-            overflow: hidden;
+            border-radius: 50px; /* ทรงแคปซูล */
+            padding: 2px;
             transition: all 0.3s ease;
         }
-        .input-group-glass:hover, .input-group-glass:focus-within {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.3);
+        .input-group-custom:hover, .input-group-custom:focus-within {
+            background-color: var(--input-hover);
+            border-color: rgba(255,255,255,0.3);
             box-shadow: 0 0 15px rgba(255, 59, 59, 0.1);
         }
-        .input-group-glass .input-group-text {
-            background: transparent;
-            border: none;
-            color: #aaa;
-            padding-left: 20px;
+        .input-group-custom .input-group-text {
+            background: transparent; border: none; color: #aaa; padding-left: 15px;
         }
-        .input-group-glass .form-control {
-            background: transparent;
-            border: none;
-            color: white;
-            box-shadow: none;
-            padding-top: 12px; padding-bottom: 12px;
+        .input-group-custom .form-control {
+            background: transparent; border: none; color: white; box-shadow: none; padding: 8px;
         }
-        .input-group-glass .form-control::placeholder { color: #666; }
+        .input-group-custom .form-control::placeholder { color: #777; }
 
-        /* Custom Select Styling */
+        /* 2. Select Box Style (Dropdowns) */
         .form-select-custom {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: var(--input-bg);
             border: var(--glass-border);
-            color: #e0e0e0;
-            border-radius: 12px; /* มุมมนกำลังดี */
+            color: #ddd;
+            border-radius: 15px; /* มุมมน */
             padding: 10px 15px;
             cursor: pointer;
             transition: all 0.3s ease;
-            /* Custom Arrow Icon (optional color fix) */
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23aaaaaa' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+            font-size: 0.95rem;
+            /* Custom Arrow Color */
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23bbbbbb' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
+            background-size: 16px 12px;
         }
         .form-select-custom:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.4);
+            background-color: var(--input-hover);
+            border-color: rgba(255,255,255,0.4);
+            color: white;
+            transform: translateY(-1px);
         }
         .form-select-custom:focus {
-            background-color: rgba(30, 30, 30, 0.9);
+            background-color: #2a2a2a;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(255, 59, 59, 0.15);
-            color: white;
+            box-shadow: 0 0 0 3px rgba(255, 59, 59, 0.2);
+            outline: none;
         }
-        /* Styling Options inside (limited support but good for dark mode) */
         .form-select-custom option {
             background-color: #1a1a1a;
             color: white;
             padding: 10px;
         }
-
 
         /* --- Cards --- */
         .card-custom {
@@ -133,18 +133,37 @@
         .btn-close-modal:hover { background: var(--primary-color); border-color: var(--primary-color); transform: rotate(90deg); }
 
         @media (max-width: 991.98px) {
-            .modal-body .row { flex-direction: column; }
-            .modal-image-col { height: 350px; min-height: auto !important; }
-            .modal-info-col { border-left: none !important; border-top: 1px solid #333; }
+            /* ปรับ Layout สำหรับมือถือ */
+            .modal-body .row { flex-direction: column; height: auto !important; }
+            .modal-image-col { 
+                height: 40vh; /* ลดความสูงรูปลง เพื่อให้เห็นเนื้อหาด้านล่าง */
+                min-height: 300px; 
+                flex-shrink: 0; 
+            }
+            .modal-info-col { 
+                border-left: none !important; 
+                border-top: 1px solid #333; 
+                flex: 1; 
+                overflow: hidden; 
+                display: flex; 
+                flex-direction: column; 
+                min-height: 50vh; /* ความสูงขั้นต่ำของเนื้อหา */
+            }
+            .scrollable-content { 
+                overflow-y: auto; 
+                flex-grow: 1; 
+                padding-bottom: 20px; 
+                max-height: calc(50vh - 100px); /* จำกัดความสูงเนื้อหาเพื่อให้เห็น Footer */
+            }
             .btn-mobile-lg { padding: 12px 20px; font-size: 1.1rem; }
-            
-            /* Mobile Navbar Tweaks */
             .navbar-actions { justify-content: center !important; width: 100%; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; }
-            /* Mobile Filters Stack */
-            .filter-group { flex-direction: row !important; width: 100%; }
-            .filter-group select { flex: 1; }
+            .filter-section { flex-direction: column; width: 100%; gap: 10px !important; }
+            .filter-dropdowns { width: 100%; }
         }
-        @media (min-width: 992px) { .modal-image-col { min-height: 600px; } }
+        @media (min-width: 992px) { 
+            .modal-image-col { min-height: 600px; } 
+            .scrollable-content { overflow-y: auto; flex-grow: 1; max-height: 400px; }
+        }
 
         .badge-glass { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2); font-weight: 400; letter-spacing: 0.5px; }
         .sold-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10; pointer-events: none; backdrop-filter: blur(2px); }
@@ -157,10 +176,8 @@
         .btn-main:hover { background: linear-gradient(135deg, #ef233c 0%, #d90429 100%); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 35, 60, 0.6); }
         .btn-outline-custom { border: 1px solid #555; color: #ccc; }
         .btn-outline-custom:hover { border-color: white; color: white; background: rgba(255,255,255,0.1); }
-        
         .btn-gold { color: #ffb703; border-color: #ffb703; background: transparent; }
         .btn-gold:hover { background: #ffb703; color: #000; }
-
         .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: #0f0f0f; z-index:9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
@@ -192,18 +209,18 @@
             <!-- Navbar Content -->
             <div class="collapse navbar-collapse mt-3 mt-xl-0" id="navbarContent">
                 
-                <!-- 2. Search & Filters (Center Group - Redesigned ✨) -->
-                <div class="d-flex flex-column flex-lg-row gap-3 mx-auto w-100 justify-content-center mb-3 mb-xl-0" style="max-width: 800px;">
+                <!-- 2. Search & Filters (Redesigned 🔥) -->
+                <div class="d-flex gap-3 mx-auto w-100 justify-content-center mb-3 mb-xl-0 filter-section" style="max-width: 850px;">
                     
                     <!-- Search Box (Capsule Style) -->
-                    <div class="input-group input-group-glass flex-grow-1" style="min-width: 250px;">
+                    <div class="input-group input-group-custom flex-grow-1 shadow-sm" style="min-width: 220px;">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                         <input type="text" class="form-control" id="searchInput" placeholder="ค้นหาสินค้าที่ต้องการ...">
                     </div>
                     
-                    <!-- Filter Group (Side by Side) -->
-                    <div class="d-flex gap-2 filter-group">
-                        <select class="form-select form-select-custom flex-fill" id="filterCategory" style="min-width: 140px;">
+                    <!-- Filter Dropdowns (Better Design) -->
+                    <div class="d-flex gap-2 filter-dropdowns">
+                        <select class="form-select form-select-custom shadow-sm flex-fill" id="filterCategory" style="min-width: 150px;">
                             <option value="all">📂 ทุกหมวดหมู่</option>
                             <option value="it">📱 ไอที/Gadget</option>
                             <option value="fashion">👕 แฟชั่น</option>
@@ -212,26 +229,25 @@
                             <option value="other">📦 อื่นๆ</option>
                         </select>
                         
-                        <select class="form-select form-select-custom flex-fill" id="sortOption" style="min-width: 140px;">
+                        <select class="form-select form-select-custom shadow-sm flex-fill" id="sortOption" style="min-width: 150px;">
                             <option value="newest">🕒 ใหม่ล่าสุด</option>
                             <option value="ending_soon">🔥 ใกล้จบ</option>
                             <option value="price_asc">💰 ราคา: ต่ำ ➜ สูง</option>
                             <option value="price_desc">💎 ราคา: สูง ➜ ต่ำ</option>
                         </select>
                     </div>
-
                 </div>
 
                 <!-- 3. Action Groups (Right Side) -->
                 <div class="d-flex gap-2 align-items-center flex-wrap navbar-actions justify-content-center justify-content-xl-end">
                     
-                    <!-- Group A: Tools -->
+                    <!-- Tools -->
                     <div class="btn-group shadow-sm me-1">
                         <button class="btn btn-outline-custom ps-3 pe-2" onclick="openDashboardModal()" title="ของฉัน"><i class="bi bi-grid-fill"></i></button>
                         <button class="btn btn-outline-custom ps-2 pe-3" onclick="openRecoverModal()" title="ย้ายเครื่อง"><i class="bi bi-arrow-repeat"></i></button>
                     </div>
                     
-                    <!-- Group B: User -->
+                    <!-- User Info -->
                     <div class="d-flex gap-2 align-items-center bg-dark border border-secondary rounded-pill px-2 py-1 shadow-sm me-1">
                         <button class="btn btn-sm btn-link text-decoration-none text-white d-flex align-items-center gap-2" onclick="openProfileModal()">
                             <div class="bg-secondary rounded-circle" style="width: 24px; height: 24px;"></div>
@@ -242,7 +258,7 @@
                         <button id="btnLogout" onclick="logoutSystem()" class="btn btn-sm btn-outline-danger rounded-circle d-none" style="width: 30px; height: 30px; padding: 0;"><i class="bi bi-power"></i></button>
                     </div>
 
-                    <!-- Group C: Main Actions -->
+                    <!-- Main Actions -->
                     <div class="d-flex gap-2">
                         <button class="btn btn-main rounded-pill px-4 shadow-sm d-flex align-items-center gap-2" onclick="openAddModal()">
                             <i class="bi bi-plus-lg"></i> <span>ลงขาย</span>
@@ -257,7 +273,7 @@
         </div>
     </nav>
     
-    <!-- Product Grid (Responsive) -->
+    <!-- Product Grid -->
     <div class="container-fluid px-3 px-lg-5 pb-5 mt-4">
         <div class="row g-3 g-lg-4" id="productList">
             <!-- Skeleton Loading -->
@@ -268,7 +284,6 @@
         </div>
     </div>
 
-    <!-- (MODALS SECTION - No Changes in Logic, just kept for completeness) -->
     <!-- 1. DASHBOARD MODAL -->
     <div class="modal fade" id="dashboardModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -359,16 +374,18 @@
     <!-- 3. AUCTION/VIEW MODAL -->
     <div class="modal fade" id="auctionModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-lg-down">
-            <div class="modal-content overflow-hidden border-0 shadow-lg">
+            <div class="modal-content overflow-hidden border-0 shadow-lg h-100">
                 <button type="button" class="btn-close-modal shadow" data-bs-dismiss="modal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
-                <div class="modal-body p-0">
+                <div class="modal-body p-0 h-100">
                     <div class="row g-0 h-100">
                         <div class="col-lg-7 bg-black d-flex align-items-center justify-content-center position-relative modal-image-col" style="background: radial-gradient(circle at center, #222 0%, #000 100%);">
                             <div id="soldBadge" class="sold-overlay d-none"><div class="sold-text">SOLD OUT</div></div>
                             <img id="modalImage" src="" class="img-fluid w-100 h-100" style="object-fit: contain; max-height: 80vh;">
                             <div class="position-absolute top-0 start-0 m-3"><span id="modalCategoryBadge" class="badge bg-dark border border-secondary text-uppercase px-3 py-2 rounded-pill shadow backdrop-blur">หมวดหมู่</span></div>
                         </div>
-                        <div class="col-lg-5 d-flex flex-column modal-info-col" style="background: #181818; border-left: 1px solid #333; height: 100%;">
+                        <div class="col-lg-5 d-flex flex-column modal-info-col" style="background: #181818; border-left: 1px solid #333;">
+                            
+                            <!-- 1. Header -->
                             <div class="p-4 border-bottom border-secondary">
                                 <h3 class="text-white fw-bold mb-2" id="modalTitle" style="line-height: 1.3;">...</h3>
                                 <div class="d-flex align-items-end justify-content-between mt-3">
@@ -376,7 +393,9 @@
                                     <div class="text-end"><small class="text-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">Time Left</small><span id="modalTimer" class="badge bg-warning text-dark fs-6 font-monospace shadow py-2">--:--:--</span></div>
                                 </div>
                             </div>
-                            <div class="flex-grow-1 p-4 overflow-auto custom-scrollbar" style="max-height: 400px;">
+
+                            <!-- 2. Scrollable Content -->
+                            <div class="scrollable-content p-4 custom-scrollbar">
                                 <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded-3 bg-dark border border-secondary shadow-sm">
                                     <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;"><i class="bi bi-person-fill fs-4 text-white"></i></div>
                                     <div class="flex-grow-1 overflow-hidden"><div class="text-secondary small text-uppercase fw-bold" style="font-size: 0.65rem;">Seller</div><div class="fw-bold text-white text-truncate" id="modalSellerName">Unknown</div></div>
@@ -391,7 +410,9 @@
                                     <div id="bidHistoryList" class="d-flex flex-column gap-2 p-2 bg-dark rounded border border-secondary" style="min-height: 100px;"><div class="text-center small text-secondary py-3">กำลังโหลด...</div></div>
                                 </div>
                             </div>
-                            <div class="p-3 bg-dark border-top border-secondary sticky-bottom">
+
+                            <!-- 3. Sticky Footer Action Bar -->
+                            <div class="p-3 bg-dark border-top border-secondary mt-auto">
                                 <div id="buyNowSection" class="mb-2 d-none">
                                     <button class="btn btn-outline-success w-100 py-2 rounded-3 d-flex justify-content-between align-items-center btn-mobile-lg" onclick="buyNow()">
                                         <span class="fw-bold"><i class="bi bi-lightning-fill"></i> ซื้อสดทันที</span><span class="fw-bold fs-5" id="buyNowPriceDisplay">฿0</span>
