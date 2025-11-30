@@ -713,5 +713,4 @@ window.recoverAccount = async function() {
         toggleLoading(false); alert(`ย้ายสำเร็จ! ยินดีต้อนรับ ${oldUserData.displayName}`); location.reload();
     } catch (error) { toggleLoading(false); alert("Error: " + error.message); }
 }
-function toggleLoading(show) { const loader = document.getElementById('loading'); if(loader) loader.style.display = show ? 'block' : 'none'; }
 function checkBan() { if(isBanned) { alert("คุณถูกระงับการใช้งาน"); return true; } return false; }
