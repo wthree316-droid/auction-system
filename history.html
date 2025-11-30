@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ประวัติการประมูล - Auction History</title>
+    <title>Auction X - History</title>
+    
+    <!-- Google Fonts: Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -19,67 +21,130 @@
             --card-bg: rgba(30, 30, 30, 0.7);
             --glass-border: 1px solid rgba(255, 255, 255, 0.15);
         }
+
         body { 
             background-color: var(--dark-bg); 
+            background-image: radial-gradient(circle at 10% 20%, rgba(255, 59, 59, 0.1) 0%, transparent 20%),
+                              radial-gradient(circle at 90% 80%, rgba(255, 183, 3, 0.05) 0%, transparent 20%);
             color: #e0e0e0; 
             font-family: 'Kanit', sans-serif; 
             min-height: 100vh;
+            padding-bottom: 80px;
         }
+
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
+
+        /* --- Navbar --- */
         .navbar-glass {
             background: rgba(15, 15, 15, 0.95);
             backdrop-filter: blur(12px);
             border-bottom: var(--glass-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
         }
+
+        /* --- Stats Cards --- */
+        .stat-card {
+            background: linear-gradient(145deg, rgba(40,40,40,0.6) 0%, rgba(20,20,20,0.8) 100%);
+            border: var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .stat-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.3); }
+        
+        .stat-icon {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; margin: 0 auto 10px;
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* --- History Cards --- */
         .card-history {
-            background-color: #1a1a1a; 
-            border: 1px solid #333; 
-            border-radius: 12px;
+            background: var(--card-bg);
+            border: var(--glass-border);
+            border-radius: 16px;
             overflow: hidden;
-            transition: transform 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
         }
         .card-history:hover {
-            transform: translateY(-3px);
-            border-color: #666;
-        }
-        .product-img-list { 
-            height: 200px; 
-            object-fit: cover; 
-            width: 100%; 
-            filter: grayscale(20%);
-        }
-        .winner-badge { 
-            background: linear-gradient(45deg, #ffd700, #b8860b); 
-            color: black; 
-            font-weight: bold; 
-            padding: 4px 10px; 
-            border-radius: 20px; 
-            font-size: 0.8rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-        .sold-badge {
-            position: absolute; top: 10px; right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: #2ecc71;
-            border: 1px solid #2ecc71;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-        }
-        .expired-badge {
-            position: absolute; top: 10px; right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: #95a5a6;
-            border: 1px solid #95a5a6;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 0.8rem;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border-color: #555;
         }
         
-        .loading-container { text-align: center; padding: 50px 0; color: #666; }
+        .product-img-wrapper {
+            position: relative; overflow: hidden; padding-top: 75%; background-color: #000;
+        }
+        .product-img-list { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            object-fit: cover; filter: grayscale(20%);
+            transition: transform 0.5s ease, filter 0.3s;
+        }
+        .card-history:hover .product-img-list { transform: scale(1.1); filter: grayscale(0%); }
+
+        /* Status Badges */
+        .status-badge {
+            position: absolute; top: 10px; right: 10px;
+            padding: 5px 12px; border-radius: 30px;
+            font-weight: 600; font-size: 0.8rem;
+            text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 2;
+        }
+        .bg-sold { background: rgba(40, 167, 69, 0.9); color: white; border: 1px solid #28a745; }
+        .bg-expired { background: rgba(108, 117, 125, 0.9); color: white; border: 1px solid #6c757d; }
+
+        /* Winner Info */
+        .winner-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px; padding: 8px 12px;
+            margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* --- Modal --- */
+        .modal-content {
+            background-color: #181818;
+            border: var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.7);
+        }
+        .btn-close-modal { 
+            position: absolute; top: 15px; right: 15px; z-index: 1050; 
+            background: rgba(0,0,0,0.5); color: white; 
+            border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; 
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .btn-close-modal:hover { background: var(--primary-color); border-color: var(--primary-color); }
+
+        /* --- Loading --- */
+        .loading-container { 
+            text-align: center; padding: 60px 0; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 300px;
+        }
+        
+        /* Section Headers */
+        .section-header {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title { font-size: 1.2rem; font-weight: 600; color: #fff; margin: 0; }
+        .section-badge { background: #333; color: #aaa; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -87,50 +152,120 @@
     <!-- Navbar -->
     <nav class="navbar navbar-dark navbar-glass sticky-top py-3 mb-4">
         <div class="container">
-            <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill">
-                <i class="bi bi-arrow-left"></i> กลับหน้าประมูล
+            <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-2 transition hover-white">
+                <i class="bi bi-arrow-left"></i> <span>กลับหน้าหลัก</span>
             </a>
-            <span class="navbar-brand mb-0 h1 text-warning fw-bold mx-auto pe-5">
-                <i class="bi bi-clock-history"></i> ประวัติการขาย
-            </span>
+            
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-clock-history text-dark"></i>
+                </div>
+                <span class="navbar-brand mb-0 h1 fw-bold text-warning" style="letter-spacing: 1px;">HISTORY</span>
+            </div>
+            
+            <div style="width: 100px;"></div> <!-- Spacer for centering -->
         </div>
     </nav>
 
     <div class="container pb-5">
         
-        <!-- Summary Stats -->
-        <div class="d-flex justify-content-end mb-3">
-            <span class="badge bg-dark border border-secondary text-secondary me-2">
-                รวมยอดขาย: <span id="totalRevenue" class="text-white">฿0</span>
-            </span>
-            <span class="badge bg-dark border border-secondary text-secondary">
-                จำนวนรายการ: <span id="totalItems" class="text-white">0</span>
-            </span>
-        </div>
-
-        <!-- Content List -->
-        <div class="row g-4" id="historyList">
-            <div class="loading-container">
-                <div class="spinner-border text-secondary" role="status"></div>
-                <p class="mt-2">กำลังโหลดข้อมูลประวัติ...</p>
+        <!-- 1. Stats Overview (Cards) -->
+        <div class="row g-3 mb-5 justify-content-center">
+            <div class="col-6 col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon text-success"><i class="bi bi-bag-check-fill"></i></div>
+                    <h3 class="fw-bold text-white mb-0" id="totalItems">0</h3>
+                    <small class="text-secondary text-uppercase">รายการที่ขายแล้ว</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="stat-card border-warning" style="background: linear-gradient(145deg, rgba(255, 193, 7, 0.1) 0%, rgba(20,20,20,0.8) 100%);">
+                    <div class="stat-icon text-warning"><i class="bi bi-coin"></i></div>
+                    <h3 class="fw-bold text-warning mb-0" id="totalRevenue">฿0</h3>
+                    <small class="text-secondary text-uppercase">มูลค่าการซื้อขายรวม</small>
+                </div>
             </div>
         </div>
+
+        <div id="loadingSection" class="loading-container col-12">
+            <div class="spinner-border text-warning mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+            <p class="text-secondary">กำลังดึงข้อมูลจากฐานข้อมูล...</p>
+        </div>
+
+        <div id="historyContent" style="display: none;">
+            
+            <!-- 2. Sold Items Section (ขายแล้ว / ซื้อสด) -->
+            <div class="mb-5">
+                <div class="section-header">
+                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                    <h5 class="section-title">รายการที่ขายแล้ว (Sold & Buy Now)</h5>
+                    <span class="section-badge" id="soldCountBadge">0</span>
+                </div>
+                <div class="row g-4" id="soldList">
+                    <!-- Items will be injected here -->
+                </div>
+                <div id="noSoldMsg" class="text-center text-secondary py-4 d-none">ยังไม่มีรายการที่ขายได้</div>
+            </div>
+
+            <!-- 3. Expired Items Section (ปิดประมูล แต่มีคนเสนอราคา) -->
+            <div class="mb-5">
+                <div class="section-header">
+                    <i class="bi bi-hourglass-bottom text-secondary fs-5"></i>
+                    <h5 class="section-title">รายการที่ปิดประมูล (Closed Auction)</h5>
+                    <span class="section-badge" id="expiredCountBadge">0</span>
+                </div>
+                <div class="row g-4" id="expiredList">
+                     <!-- Items will be injected here -->
+                </div>
+                <div id="noExpiredMsg" class="text-center text-secondary py-4 d-none">ไม่มีรายการปิดประมูล</div>
+            </div>
+
+        </div>
+
     </div>
 
-    <!-- Modal Detail -->
+    <!-- ============================================ -->
+    <!-- DETAIL MODAL (สวยงามขึ้น) -->
+    <!-- ============================================ -->
     <div class="modal fade" id="historyDetailModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title" id="detailTitle">...</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <img id="detailImage" src="" class="img-fluid rounded mb-3 w-100">
-                    <p><strong>จบที่ราคา:</strong> <span class="text-danger fw-bold" id="detailPrice">...</span></p>
-                    <p><strong>ผู้ชนะ:</strong> <span class="text-warning" id="detailWinner">...</span></p>
-                    <p><strong>วันที่จบ:</strong> <span class="text-secondary" id="detailDate">...</span></p>
-                    <div class="alert alert-secondary bg-black border-secondary small" id="detailDesc">...</div>
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content overflow-hidden">
+                <button type="button" class="btn-close-modal" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
+                
+                <div class="modal-body p-0">
+                    <div class="row g-0">
+                        <!-- รูปภาพ -->
+                        <div class="col-md-6 bg-black d-flex align-items-center justify-content-center" style="min-height: 300px;">
+                            <img id="detailImage" src="" class="img-fluid" style="max-height: 400px; object-fit: contain;">
+                        </div>
+
+                        <!-- ข้อมูล -->
+                        <div class="col-md-6 p-4 d-flex flex-column justify-content-center bg-dark">
+                            <div class="mb-auto">
+                                <span id="detailStatusBadge" class="badge bg-secondary mb-2">STATUS</span>
+                                <h4 class="text-white fw-bold mb-1" id="detailTitle">...</h4>
+                                <small class="text-secondary d-block mb-3" id="detailDate">ปิดเมื่อ: -</small>
+                            </div>
+
+                            <div class="py-4 border-top border-bottom border-secondary my-3">
+                                <div class="row text-center">
+                                    <div class="col-6 border-end border-secondary">
+                                        <small class="text-secondary d-block text-uppercase mb-1">ราคาจบประมูล</small>
+                                        <span class="h4 text-danger fw-bold mb-0" id="detailPrice">฿0</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-secondary d-block text-uppercase mb-1">ผู้ชนะ</small>
+                                        <span class="h5 text-warning fw-bold mb-0" id="detailWinner">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto">
+                                <small class="text-secondary fw-bold mb-1 d-block">รายละเอียดสินค้า</small>
+                                <p class="text-white-50 small mb-0" id="detailDesc" style="white-space: pre-line;">...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -139,11 +274,9 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- เรียกใช้ไฟล์แยก -->
+    <!-- Logic -->
     <script type="module">
         import { initHistoryPage } from "./history.js";
-        
-        // เริ่มทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', () => {
             initHistoryPage();
         });
