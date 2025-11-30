@@ -51,26 +51,21 @@ async function loadHistory() {
             let shouldShow = false;
             let targetContainer = null;
 
-            if (isSold) {
-                shouldShow = true;
-                targetContainer = soldListContainer;
-                soldCount++;
-                revenue += (item.current_price || 0);
-            } else if (isExpired && item.last_bidder_uid) { // 🔥 เช็คว่ามีคนประมูลไหม
-                shouldShow = true;
-                targetContainer = expiredListContainer;
-                expiredCount++;
-            }
-
-            if (shouldShow && targetContainer) {
+            if (isSold || isExpired) {
+                count++;
+                if (isSold) revenue += (item.current_price || 0);
                 
                 // สร้าง Element การ์ดสินค้า
                 const col = document.createElement('div');
                 col.className = "col-12 col-md-6 col-lg-4 col-xl-3";
                 
                 let statusBadge = isSold ? 
-                    `<span class="badge bg-success position-absolute top-0 end-0 m-2">SOLD</span>` : 
-                    `<span class="badge bg-secondary position-absolute top-0 end-0 m-2">CLOSED</span>`;
+                    `<span class="sold-badge">SOLD <i class="bi bi-check-lg"></i></span>` : 
+                    `<span class="expired-badge">EXPIRED</span>`;
+                
+                // 🔥 เพิ่ม Overlay ข้อความทับรูป
+                let overlayText = isSold ? "ขายแล้ว" : "ปิดประมูล";
+                let overlayClass = isSold ? "sold-overlay-text" : "expired-overlay-text";
                 
                 let priceColor = isSold ? "text-success" : "text-secondary";
                 let dateStr = item.end_time_ms ? new Date(item.end_time_ms).toLocaleDateString('th-TH') : "-";
@@ -78,14 +73,25 @@ async function loadHistory() {
                 col.innerHTML = `
                     <div class="card h-100 card-history position-relative" style="cursor: pointer;">
                         ${statusBadge}
-                        <img src="${item.image_url}" class="card-img-top product-img-list" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                        
+                        <div class="position-relative overflow-hidden">
+                            <img src="${item.image_url}" class="card-img-top product-img-list" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                            <!-- 🔥 Overlay ทับรูป -->
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.5);">
+                                <span class="${overlayClass}">${overlayText}</span>
+                            </div>
+                        </div>
+
                         <div class="card-body p-3">
                             <h6 class="card-title text-truncate text-white mb-1">${item.title}</h6>
                             <p class="card-text fw-bold ${priceColor} mb-2">จบที่: ฿${item.current_price.toLocaleString()}</p>
                             
-                            <div class="d-flex justify-content-between align-items-end">
-                                <div id="winner-${docSnap.id}" class="small text-secondary">
-                                    ${isSold ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้ชนะ...' : (item.last_bidder_uid ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้สูงสุด...' : 'ไม่มีผู้ประมูล')}
+                            <div class="d-flex justify-content-between align-items-end border-top border-secondary pt-2 mt-2">
+                                <div>
+                                    <small class="text-secondary d-block" style="font-size: 0.7rem;">ผู้ชนะ:</small>
+                                    <div id="winner-${docSnap.id}" class="small text-secondary">
+                                        ${isSold ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้ชนะ...' : (item.last_bidder_uid ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้สูงสุด...' : '-')}
+                                    </div>
                                 </div>
                                 <small class="text-secondary" style="font-size: 0.7rem;">${dateStr}</small>
                             </div>
