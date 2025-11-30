@@ -431,7 +431,7 @@ document.getElementById('auctionModal').addEventListener('hidden.bs.modal', () =
 async function uploadImageToSupabase(file) {
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '-')}`; // ตั้งชื่อไฟล์ไม่ให้ซ้ำ
     const { data, error } = await supabase.storage
-        .from('images') // ⚠️ ชื่อ Bucket ต้องตรงกับใน Supabase
+        .from('product-images') // ⚠️ ชื่อ Bucket ต้องตรงกับใน Supabase
         .upload(fileName, file);
 
     if (error) {
@@ -441,7 +441,7 @@ async function uploadImageToSupabase(file) {
 
     // ดึง Public URL
     const { data: publicData } = supabase.storage
-        .from('images')
+        .from('product-images')
         .getPublicUrl(fileName);
         
     return publicData.publicUrl;
@@ -707,4 +707,5 @@ window.recoverAccount = async function() {
 }
 function toggleLoading(show) { const loader = document.getElementById('loading'); if(loader) loader.style.display = show ? 'block' : 'none'; }
 function checkBan() { if(isBanned) { alert("คุณถูกระงับการใช้งาน"); return true; } return false; }
+
 
