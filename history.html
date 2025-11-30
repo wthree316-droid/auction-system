@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auction X - History</title>
-    
-    <!-- Google Fonts: Kanit -->
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
-    
+    <title>ประวัติการประมูล - Auction History</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -21,127 +19,113 @@
             --card-bg: rgba(30, 30, 30, 0.7);
             --glass-border: 1px solid rgba(255, 255, 255, 0.15);
         }
-
         body { 
             background-color: var(--dark-bg); 
-            background-image: radial-gradient(circle at 10% 20%, rgba(255, 59, 59, 0.1) 0%, transparent 20%),
-                              radial-gradient(circle at 90% 80%, rgba(255, 183, 3, 0.05) 0%, transparent 20%);
             color: #e0e0e0; 
             font-family: 'Kanit', sans-serif; 
             min-height: 100vh;
-            padding-bottom: 80px;
         }
-
-        /* --- Custom Scrollbar --- */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
-
-        /* --- Navbar --- */
         .navbar-glass {
             background: rgba(15, 15, 15, 0.95);
             backdrop-filter: blur(12px);
             border-bottom: var(--glass-border);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
         }
-
-        /* --- Stats Cards --- */
-        .stat-card {
-            background: linear-gradient(145deg, rgba(40,40,40,0.6) 0%, rgba(20,20,20,0.8) 100%);
-            border: var(--glass-border);
-            border-radius: 16px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.3s;
-            backdrop-filter: blur(5px);
-        }
-        .stat-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.3); }
-        
-        .stat-icon {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; margin: 0 auto 10px;
-            background: rgba(255,255,255,0.1);
-        }
-
-        /* --- History Cards --- */
         .card-history {
-            background: var(--card-bg);
-            border: var(--glass-border);
-            border-radius: 16px;
+            background-color: #1a1a1a; 
+            border: 1px solid #333; 
+            border-radius: 12px;
             overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+            transition: transform 0.2s;
         }
         .card-history:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            border-color: #555;
-        }
-        
-        .product-img-wrapper {
-            position: relative; overflow: hidden; padding-top: 75%; background-color: #000;
+            transform: translateY(-3px);
+            border-color: #666;
         }
         .product-img-list { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            object-fit: cover; filter: grayscale(20%);
-            transition: transform 0.5s ease, filter 0.3s;
+            height: 200px; 
+            object-fit: cover; 
+            width: 100%; 
+            filter: grayscale(40%); /* ทำให้เทาลงหน่อย */
         }
-        .card-history:hover .product-img-list { transform: scale(1.1); filter: grayscale(0%); }
-
-        /* Status Badges */
-        .status-badge {
+        .winner-badge { 
+            background: linear-gradient(45deg, #ffd700, #b8860b); 
+            color: black; 
+            font-weight: bold; 
+            padding: 2px 8px; 
+            border-radius: 20px; 
+            font-size: 0.75rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            display: inline-block;
+            white-space: nowrap;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sold-badge {
             position: absolute; top: 10px; right: 10px;
-            padding: 5px 12px; border-radius: 30px;
-            font-weight: 600; font-size: 0.8rem;
-            text-transform: uppercase; letter-spacing: 1px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            z-index: 2;
+            background: rgba(0,0,0,0.7);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            z-index: 10;
         }
-        .bg-sold { background: rgba(40, 167, 69, 0.9); color: white; border: 1px solid #28a745; }
-        .bg-expired { background: rgba(108, 117, 125, 0.9); color: white; border: 1px solid #6c757d; }
+        .expired-badge {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #95a5a6;
+            border: 1px solid #95a5a6;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            z-index: 10;
+        }
+        
+        /* 🔥 สไตล์ตัวหนังสือทับรูป (Overlay Text) */
+        .sold-overlay-text {
+            color: #2ecc71;
+            font-size: 1.5rem;
+            font-weight: 900;
+            border: 3px solid #2ecc71;
+            padding: 5px 15px;
+            transform: rotate(-15deg);
+            background: rgba(0,0,0,0.6);
+            text-transform: uppercase;
+        }
+        .expired-overlay-text {
+            color: #bdc3c7;
+            font-size: 1.5rem;
+            font-weight: 900;
+            border: 3px solid #bdc3c7;
+            padding: 5px 15px;
+            transform: rotate(-15deg);
+            background: rgba(0,0,0,0.6);
+            text-transform: uppercase;
+        }
 
-        /* Winner Info */
-        .winner-info {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px; padding: 8px 12px;
-            margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);
+        /* สไตล์ใน Modal */
+        .sold-text-modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 3rem; font-weight: 900; color: #2ecc71; border: 5px solid #2ecc71;
+            padding: 10px 30px; background: rgba(0,0,0,0.8); z-index: 10;
         }
-
-        /* --- Modal --- */
-        .modal-content {
-            background-color: #181818;
-            border: var(--glass-border);
-            border-radius: 20px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.7);
+        .expired-text-modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 3rem; font-weight: 900; color: #bdc3c7; border: 5px solid #bdc3c7;
+            padding: 10px 30px; background: rgba(0,0,0,0.8); z-index: 10;
         }
-        .btn-close-modal { 
-            position: absolute; top: 15px; right: 15px; z-index: 1050; 
-            background: rgba(0,0,0,0.5); color: white; 
-            border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; 
-            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
-        }
-        .btn-close-modal:hover { background: var(--primary-color); border-color: var(--primary-color); }
-
-        /* --- Loading --- */
-        .loading-container { 
-            text-align: center; padding: 60px 0; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 300px;
-        }
+        
+        .loading-container { text-align: center; padding: 50px 0; color: #666; }
         
         /* Section Headers */
         .section-header {
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
         }
         .section-title { font-size: 1.2rem; font-weight: 600; color: #fff; margin: 0; }
         .section-badge { background: #333; color: #aaa; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
@@ -155,21 +139,19 @@
             <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-2 transition hover-white">
                 <i class="bi bi-arrow-left"></i> <span>กลับหน้าหลัก</span>
             </a>
-            
             <div class="d-flex align-items-center gap-2">
                 <div class="bg-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                     <i class="bi bi-clock-history text-dark"></i>
                 </div>
                 <span class="navbar-brand mb-0 h1 fw-bold text-warning" style="letter-spacing: 1px;">HISTORY</span>
             </div>
-            
-            <div style="width: 100px;"></div> <!-- Spacer for centering -->
+            <div style="width: 100px;"></div> <!-- Spacer -->
         </div>
     </nav>
 
     <div class="container pb-5">
         
-        <!-- 1. Stats Overview (Cards) -->
+        <!-- 1. Stats Overview -->
         <div class="row g-3 mb-5 justify-content-center">
             <div class="col-6 col-md-4">
                 <div class="stat-card">
@@ -192,40 +174,15 @@
             <p class="text-secondary">กำลังดึงข้อมูลจากฐานข้อมูล...</p>
         </div>
 
-        <div id="historyContent" style="display: none;">
-            
-            <!-- 2. Sold Items Section (ขายแล้ว / ซื้อสด) -->
-            <div class="mb-5">
-                <div class="section-header">
-                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
-                    <h5 class="section-title">รายการที่ขายแล้ว (Sold & Buy Now)</h5>
-                    <span class="section-badge" id="soldCountBadge">0</span>
-                </div>
-                <div class="row g-4" id="soldList">
-                    <!-- Items will be injected here -->
-                </div>
-                <div id="noSoldMsg" class="text-center text-secondary py-4 d-none">ยังไม่มีรายการที่ขายได้</div>
-            </div>
-
-            <!-- 3. Expired Items Section (ปิดประมูล แต่มีคนเสนอราคา) -->
-            <div class="mb-5">
-                <div class="section-header">
-                    <i class="bi bi-hourglass-bottom text-secondary fs-5"></i>
-                    <h5 class="section-title">รายการที่ปิดประมูล (Closed Auction)</h5>
-                    <span class="section-badge" id="expiredCountBadge">0</span>
-                </div>
-                <div class="row g-4" id="expiredList">
-                     <!-- Items will be injected here -->
-                </div>
-                <div id="noExpiredMsg" class="text-center text-secondary py-4 d-none">ไม่มีรายการปิดประมูล</div>
-            </div>
-
+        <!-- 2. Content List -->
+        <div class="row g-4" id="historyList">
+            <!-- Cards จะถูกสร้างที่นี่โดย JS -->
         </div>
 
     </div>
 
     <!-- ============================================ -->
-    <!-- DETAIL MODAL (สวยงามขึ้น) -->
+    <!-- DETAIL MODAL (มี Overlay Text) -->
     <!-- ============================================ -->
     <div class="modal fade" id="historyDetailModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -234,8 +191,9 @@
                 
                 <div class="modal-body p-0">
                     <div class="row g-0">
-                        <!-- รูปภาพ -->
-                        <div class="col-md-6 bg-black d-flex align-items-center justify-content-center" style="min-height: 300px;">
+                        <!-- รูปภาพ + Overlay -->
+                        <div class="col-md-6 bg-black d-flex align-items-center justify-content-center position-relative" style="min-height: 300px;">
+                            <div id="detailImageOverlay"></div> <!-- 🔥 ที่สำหรับใส่คำว่า ขายแล้ว/ปิดประมูล -->
                             <img id="detailImage" src="" class="img-fluid" style="max-height: 400px; object-fit: contain;">
                         </div>
 
