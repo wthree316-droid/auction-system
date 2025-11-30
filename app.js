@@ -177,23 +177,36 @@ window.openDashboardModal = async function() {
 }
 
 // ==========================================
-// C. Load Products
+// C. โหลดสินค้าหลัก (กรอง Sold/Expired ออก)
 // ==========================================
 async function loadProducts() {
     const listContainer = document.getElementById('productList');
     if(!listContainer) return;
+    
     const q = query(collection(db, "auctions"), orderBy("created_at", "desc")); 
+    
     onSnapshot(q, (snapshot) => {
         allProducts = [];
+        const now = new Date().getTime();
+
         snapshot.forEach((doc) => {
             const data = doc.data();
             data.id = doc.id;
-            allProducts.push(data);
+            
+            // 🔥 กรอง: เอาเฉพาะที่ยังไม่ขาย (status != 'sold') และยังไม่หมดเวลา
+            const isSold = data.status === 'sold';
+            const isExpired = data.end_time_ms && now > data.end_time_ms;
+
+            if (!isSold && !isExpired) {
+                allProducts.push(data);
+            }
         });
-        applyFilters();
+        
+        applyFilters(); 
     });
 }
 loadProducts();
+
 
 // ==========================================
 // D. Auth & User Profile & IP Lock
@@ -722,3 +735,4 @@ window.recoverAccount = async function() {
     } catch (error) { toggleLoading(false); alert("Error: " + error.message); }
 }
 function checkBan() { if(isBanned) { alert("คุณถูกระงับการใช้งาน"); return true; } return false; }
+
