@@ -342,7 +342,6 @@ window.openAuction = function(id, title, price, img, desc) {
                 document.getElementById('modalEmailLink').href = `mailto:${data.contact_email}`;
                 document.getElementById('modalEmailLink').classList.remove('d-none');
             }
-            
             const catMap = { 'it': 'ไอที', 'fashion': 'แฟชั่น', 'amulet': 'พระเครื่อง', 'home': 'ของใช้', 'other': 'อื่นๆ' };
             document.getElementById('modalCategoryBadge').innerText = catMap[data.category] || 'สินค้าทั่วไป';
 
@@ -590,6 +589,7 @@ if(editForm) {
 function toggleLoading(show) {
     const loader = document.getElementById('loading');
     if (loader) loader.style.display = show ? 'flex' : 'none';
+}
 
 window.placeBid = async function() {
     if(checkBan()) return;
