@@ -4,200 +4,149 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ประวัติการประมูล - Auction History</title>
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: sans-serif; }
-        .navbar { background-color: #161b22; border-bottom: 1px solid #30363d; }
-        .card { background-color: #161b22; border: 1px solid #30363d; color: #c9d1d9; transition: transform 0.2s; }
-        .card:hover { border-color: #8b949e; transform: translateY(-2px); }
-        .product-img-list { height: 180px; object-fit: cover; width: 100%; filter: grayscale(30%); }
-        .stat-card { background: #21262d; border: 1px solid #30363d; border-radius: 10px; padding: 15px; text-align: center; }
-        .text-gold { color: #ffd700; }
+        :root {
+            --primary-color: #ff3b3b;
+            --secondary-color: #ffb703;
+            --dark-bg: #0f0f0f;
+            --card-bg: rgba(30, 30, 30, 0.7);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        body { 
+            background-color: var(--dark-bg); 
+            color: #e0e0e0; 
+            font-family: 'Kanit', sans-serif; 
+            min-height: 100vh;
+        }
+        .navbar-glass {
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: var(--glass-border);
+        }
+        .card-history {
+            background-color: #1a1a1a; 
+            border: 1px solid #333; 
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .card-history:hover {
+            transform: translateY(-3px);
+            border-color: #666;
+        }
+        .product-img-list { 
+            height: 200px; 
+            object-fit: cover; 
+            width: 100%; 
+            filter: grayscale(20%);
+        }
+        .winner-badge { 
+            background: linear-gradient(45deg, #ffd700, #b8860b); 
+            color: black; 
+            font-weight: bold; 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-size: 0.8rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .sold-badge {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        .expired-badge {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #95a5a6;
+            border: 1px solid #95a5a6;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        
+        .loading-container { text-align: center; padding: 50px 0; color: #666; }
     </style>
 </head>
 <body>
 
     <!-- Navbar -->
-    <nav class="navbar navbar-dark mb-4 sticky-top">
-        <div class="container d-flex justify-content-between">
+    <nav class="navbar navbar-dark navbar-glass sticky-top py-3 mb-4">
+        <div class="container">
             <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill">
                 <i class="bi bi-arrow-left"></i> กลับหน้าประมูล
             </a>
-            <span class="navbar-brand mb-0 h1 fw-bold"><i class="bi bi-clock-history"></i> หอเกียรติยศ (History)</span>
-            <div style="width: 100px;"></div> <!-- Spacer -->
+            <span class="navbar-brand mb-0 h1 text-warning fw-bold mx-auto pe-5">
+                <i class="bi bi-clock-history"></i> ประวัติการขาย
+            </span>
         </div>
     </nav>
 
     <div class="container pb-5">
         
-        <!-- 1. Stats Overview (สรุปยอด) -->
-        <div class="row g-3 mb-4">
-            <div class="col-4">
-                <div class="stat-card">
-                    <h3 class="fw-bold text-success" id="totalSold">0</h3>
-                    <small class="text-secondary">สินค้าที่ขายแล้ว</small>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="stat-card">
-                    <h3 class="fw-bold text-gold" id="totalRevenue">฿0</h3>
-                    <small class="text-secondary">มูลค่าการซื้อขายรวม</small>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="stat-card">
-                    <h3 class="fw-bold text-danger" id="totalExpired">0</h3>
-                    <small class="text-secondary">หมดเวลา (ขายไม่ออก)</small>
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. Filters & Search -->
-        <div class="d-flex gap-2 mb-4">
-            <div class="input-group">
-                <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-search"></i></span>
-                <input type="text" class="form-control bg-dark border-secondary text-white" id="searchHistory" placeholder="ค้นหาชื่อสินค้า...">
-            </div>
-            <select class="form-select bg-dark border-secondary text-white" id="filterStatus" style="max-width: 200px;">
-                <option value="all">ทั้งหมด</option>
-                <option value="sold">✅ ขายแล้ว (Sold)</option>
-                <option value="expired">❌ หมดเวลา (Expired)</option>
-            </select>
-        </div>
-
-        <!-- Loading -->
-        <div id="loadingSection" class="text-center mt-5">
-            <div class="spinner-border text-secondary mb-2" role="status"></div>
-            <p class="text-secondary small">กำลังดึงข้อมูลจากคลัง...</p>
+        <!-- Summary Stats -->
+        <div class="d-flex justify-content-end mb-3">
+            <span class="badge bg-dark border border-secondary text-secondary me-2">
+                รวมยอดขาย: <span id="totalRevenue" class="text-white">฿0</span>
+            </span>
+            <span class="badge bg-dark border border-secondary text-secondary">
+                จำนวนรายการ: <span id="totalItems" class="text-white">0</span>
+            </span>
         </div>
 
         <!-- Content List -->
-        <div class="row g-3" id="historyList"></div>
+        <div class="row g-4" id="historyList">
+            <div class="loading-container">
+                <div class="spinner-border text-secondary" role="status"></div>
+                <p class="mt-2">กำลังโหลดข้อมูลประวัติ...</p>
+            </div>
+        </div>
     </div>
 
-    <!-- Script -->
+    <!-- Modal Detail -->
+    <div class="modal fade" id="historyDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="detailTitle">...</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <img id="detailImage" src="" class="img-fluid rounded mb-3 w-100">
+                    <p><strong>จบที่ราคา:</strong> <span class="text-danger fw-bold" id="detailPrice">...</span></p>
+                    <p><strong>ผู้ชนะ:</strong> <span class="text-warning" id="detailWinner">...</span></p>
+                    <p><strong>วันที่จบ:</strong> <span class="text-secondary" id="detailDate">...</span></p>
+                    <div class="alert alert-secondary bg-black border-secondary small" id="detailDesc">...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- เรียกใช้ไฟล์แยก -->
     <script type="module">
-        import { db, auth } from "./firebase-config.js";
-        import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-        let allHistoryItems = []; // เก็บข้อมูลดิบไว้กรอง
-
-        // Auto Login
-        onAuthStateChanged(auth, (user) => {
-            if (user) loadHistory();
-            else signInAnonymously(auth).catch(e => console.error(e));
+        import { initHistoryPage } from "./history.js";
+        
+        // เริ่มทำงานเมื่อโหลดหน้าเว็บ
+        document.addEventListener('DOMContentLoaded', () => {
+            initHistoryPage();
         });
-
-        async function loadHistory() {
-            try {
-                const q = query(collection(db, "auctions"), orderBy("created_at", "desc"));
-                const snapshot = await getDocs(q);
-                
-                allHistoryItems = [];
-                const now = new Date().getTime();
-
-                snapshot.forEach(doc => {
-                    const item = doc.data();
-                    const isSold = item.status === 'sold';
-                    const isExpired = item.end_time_ms && now > item.end_time_ms;
-
-                    // เอาเฉพาะที่จบแล้ว
-                    if (isSold || isExpired) {
-                        item.is_sold = isSold; // แปะป้ายไว้ใช้ง่ายๆ
-                        allHistoryItems.push(item);
-                    }
-                });
-
-                calculateStats();
-                renderHistory(); // วาดครั้งแรก
-                document.getElementById('loadingSection').style.display = 'none';
-
-            } catch (error) {
-                console.error(error);
-                document.getElementById('loadingSection').innerHTML = `<p class="text-danger">โหลดข้อมูลไม่สำเร็จ: ${error.message}</p>`;
-            }
-        }
-
-        // คำนวณสถิติ
-        function calculateStats() {
-            let soldCount = 0;
-            let expiredCount = 0;
-            let totalMoney = 0;
-
-            allHistoryItems.forEach(item => {
-                if(item.is_sold) {
-                    soldCount++;
-                    totalMoney += item.current_price || 0;
-                } else {
-                    expiredCount++;
-                }
-            });
-
-            document.getElementById('totalSold').innerText = soldCount;
-            document.getElementById('totalExpired').innerText = expiredCount;
-            document.getElementById('totalRevenue').innerText = `฿${totalMoney.toLocaleString()}`;
-        }
-
-        // ระบบกรองและค้นหา
-        const searchInput = document.getElementById('searchHistory');
-        const filterSelect = document.getElementById('filterStatus');
-
-        function renderHistory() {
-            const keyword = searchInput.value.toLowerCase();
-            const filter = filterSelect.value;
-            const container = document.getElementById('historyList');
-            
-            // Filter Logic
-            const filtered = allHistoryItems.filter(item => {
-                const matchKeyword = item.title.toLowerCase().includes(keyword);
-                let matchStatus = true;
-                if(filter === 'sold') matchStatus = item.is_sold;
-                if(filter === 'expired') matchStatus = !item.is_sold;
-                return matchKeyword && matchStatus;
-            });
-
-            container.innerHTML = "";
-            if(filtered.length === 0) {
-                container.innerHTML = `<div class="col-12 text-center text-secondary mt-5 op-50"><i class="bi bi-box-seam display-1"></i><p>ไม่พบข้อมูล</p></div>`;
-                return;
-            }
-
-            filtered.forEach(item => {
-                let statusBadge = item.is_sold ? 
-                    `<span class="badge bg-success">SOLD <i class="bi bi-check-lg"></i></span>` : 
-                    `<span class="badge bg-secondary">EXPIRED</span>`;
-                
-                let priceColor = item.is_sold ? "text-success" : "text-secondary";
-                let dateStr = item.end_time_ms ? new Date(item.end_time_ms).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' }) : "-";
-
-                const html = `
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <div class="card h-100 position-relative">
-                            <div class="position-absolute top-0 end-0 p-2">${statusBadge}</div>
-                            <img src="${item.image_url}" class="card-img-top product-img-list" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
-                            <div class="card-body p-3">
-                                <h6 class="card-title text-truncate text-white mb-1">${item.title}</h6>
-                                <p class="card-text fw-bold ${priceColor} mb-1">จบที่: ฿${item.current_price.toLocaleString()}</p>
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <small class="text-secondary" style="font-size: 0.75rem;"><i class="bi bi-calendar"></i> ${dateStr}</small>
-                                    ${item.is_sold ? '<i class="bi bi-trophy-fill text-warning"></i>' : ''}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.innerHTML += html;
-            });
-        }
-
-        // ผูก Event
-        searchInput.addEventListener('input', renderHistory);
-        filterSelect.addEventListener('change', renderHistory);
-
     </script>
 </body>
 </html>
-
