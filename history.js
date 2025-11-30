@@ -16,8 +16,12 @@ export async function initHistoryPage() {
 
 // ฟังก์ชันโหลดและแสดงข้อมูลประวัติ
 async function loadHistory() {
-    const listContainer = document.getElementById('historyList');
-    if (!listContainer) return;
+    const soldListContainer = document.getElementById('soldList');
+    const expiredListContainer = document.getElementById('expiredList');
+    const loadingSection = document.getElementById('loadingSection');
+    const historyContent = document.getElementById('historyContent');
+
+    if (!soldListContainer || !expiredListContainer) return;
 
     const now = new Date().getTime();
 
@@ -26,9 +30,11 @@ async function loadHistory() {
         const q = query(collection(db, "auctions"), orderBy("created_at", "desc"));
         const snapshot = await getDocs(q);
         
-        listContainer.innerHTML = "";
+        soldListContainer.innerHTML = "";
+        expiredListContainer.innerHTML = "";
         
-        let count = 0;
+        let soldCount = 0;
+        let expiredCount = 0;
         let revenue = 0;
         let promises = []; // เก็บ Promise สำหรับการดึงชื่อผู้ชนะ
 
@@ -37,18 +43,34 @@ async function loadHistory() {
             const isSold = item.status === 'sold';
             const isExpired = item.end_time_ms && now > item.end_time_ms;
 
-            // กรองเฉพาะสินค้าที่ จบแล้ว (ขายแล้ว หรือ หมดเวลา)
-            if (isSold || isExpired) {
-                count++;
-                if (isSold) revenue += (item.current_price || 0);
+            // เงื่อนไขการแสดงผล:
+            // 1. ขายแล้ว (Sold) -> แสดงแน่นอน
+            // 2. หมดเวลา (Expired) -> ต้องมีคนเคยประมูล (last_bidder_uid) ถึงจะแสดง
+            //    (ถ้าหมดเวลาเฉยๆ โดยไม่มีใครสนใจ ไม่ต้องเอามาโชว์ให้รก)
+            
+            let shouldShow = false;
+            let targetContainer = null;
+
+            if (isSold) {
+                shouldShow = true;
+                targetContainer = soldListContainer;
+                soldCount++;
+                revenue += (item.current_price || 0);
+            } else if (isExpired && item.last_bidder_uid) { // 🔥 เช็คว่ามีคนประมูลไหม
+                shouldShow = true;
+                targetContainer = expiredListContainer;
+                expiredCount++;
+            }
+
+            if (shouldShow && targetContainer) {
                 
                 // สร้าง Element การ์ดสินค้า
                 const col = document.createElement('div');
                 col.className = "col-12 col-md-6 col-lg-4 col-xl-3";
                 
                 let statusBadge = isSold ? 
-                    `<span class="sold-badge">SOLD <i class="bi bi-check-lg"></i></span>` : 
-                    `<span class="expired-badge">EXPIRED</span>`;
+                    `<span class="badge bg-success position-absolute top-0 end-0 m-2">SOLD</span>` : 
+                    `<span class="badge bg-secondary position-absolute top-0 end-0 m-2">CLOSED</span>`;
                 
                 let priceColor = isSold ? "text-success" : "text-secondary";
                 let dateStr = item.end_time_ms ? new Date(item.end_time_ms).toLocaleDateString('th-TH') : "-";
@@ -63,7 +85,7 @@ async function loadHistory() {
                             
                             <div class="d-flex justify-content-between align-items-end">
                                 <div id="winner-${docSnap.id}" class="small text-secondary">
-                                    ${isSold ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้ชนะ...' : 'ไม่มีผู้ชนะ'}
+                                    ${isSold ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้ชนะ...' : (item.last_bidder_uid ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้สูงสุด...' : 'ไม่มีผู้ประมูล')}
                                 </div>
                                 <small class="text-secondary" style="font-size: 0.7rem;">${dateStr}</small>
                             </div>
@@ -71,19 +93,22 @@ async function loadHistory() {
                     </div>
                 `;
                 
-                // เพิ่ม Event Click เพื่อเปิด Modal รายละเอียด
                 col.querySelector('.card').onclick = () => openHistoryDetail(item, docSnap.id);
-                
-                listContainer.appendChild(col);
+                targetContainer.appendChild(col);
 
-                // ถ้าขายแล้ว ให้ไปดึงชื่อผู้ชนะมาแสดง
-                if (isSold && item.buyer_uid) {
+                // ดึงชื่อผู้ชนะ/ผู้ประมูลสูงสุด (ถ้ามี)
+                // กรณี Sold: ใช้ buyer_uid (ถ้ามี) หรือ last_bidder_uid
+                // กรณี Expired: ใช้ last_bidder_uid
+                const winnerUid = item.buyer_uid || item.last_bidder_uid;
+
+                if (winnerUid) {
                     promises.push(
-                        getDoc(doc(db, "users", item.buyer_uid)).then(userSnap => {
+                        getDoc(doc(db, "users", winnerUid)).then(userSnap => {
                             const winnerName = userSnap.exists() ? userSnap.data().displayName : "Unknown";
                             const winnerEl = document.getElementById(`winner-${docSnap.id}`);
                             if (winnerEl) {
-                                winnerEl.innerHTML = `<span class="winner-badge"><i class="bi bi-trophy-fill"></i> ${winnerName}</span>`;
+                                let icon = isSold ? '<i class="bi bi-trophy-fill text-warning"></i>' : '<i class="bi bi-person-fill text-muted"></i>';
+                                winnerEl.innerHTML = `<span class="small text-secondary">${icon} ${winnerName}</span>`;
                                 // เก็บชื่อผู้ชนะไว้ใน object item เพื่อใช้ใน Modal
                                 item.winner_name = winnerName; 
                             }
@@ -93,27 +118,29 @@ async function loadHistory() {
             }
         });
 
-        // อัปเดตสรุปยอด
-        const totalItemsEl = document.getElementById('totalItems');
-        const totalRevenueEl = document.getElementById('totalRevenue');
-        
-        if(totalItemsEl) totalItemsEl.innerText = count;
-        if(totalRevenueEl) totalRevenueEl.innerText = `฿${revenue.toLocaleString()}`;
+        // อัปเดต UI
+        loadingSection.style.display = 'none';
+        historyContent.style.display = 'block';
 
-        if (count === 0) {
-            listContainer.innerHTML = `
-                <div class="col-12 text-center text-secondary mt-5 opacity-50">
-                    <i class="bi bi-inbox-fill display-1"></i>
-                    <p class="mt-3">ยังไม่มีประวัติสินค้าที่จบประมูล</p>
-                </div>`;
-        }
+        // อัปเดตตัวเลข
+        document.getElementById('totalItems').innerText = soldCount;
+        document.getElementById('totalRevenue').innerText = `฿${revenue.toLocaleString()}`;
+        document.getElementById('soldCountBadge').innerText = soldCount;
+        document.getElementById('expiredCountBadge').innerText = expiredCount;
+
+        // แสดงข้อความเมื่อไม่มีรายการ
+        if (soldCount === 0) document.getElementById('noSoldMsg').classList.remove('d-none');
+        else document.getElementById('noSoldMsg').classList.add('d-none');
+
+        if (expiredCount === 0) document.getElementById('noExpiredMsg').classList.remove('d-none');
+        else document.getElementById('noExpiredMsg').classList.add('d-none');
 
         // รอให้โหลดชื่อผู้ชนะทั้งหมดเสร็จสิ้น
         await Promise.all(promises);
 
     } catch (error) {
         console.error("Load Error:", error);
-        listContainer.innerHTML = `<p class="text-center text-danger">เกิดข้อผิดพลาด: ${error.message}</p>`;
+        loadingSection.innerHTML = `<p class="text-center text-danger">เกิดข้อผิดพลาด: ${error.message}</p>`;
     }
 }
 
@@ -128,16 +155,32 @@ function openHistoryDetail(item, id) {
     document.getElementById('detailDesc').innerText = item.description || "ไม่มีรายละเอียด";
     
     const winnerEl = document.getElementById('detailWinner');
+    const statusBadge = document.getElementById('detailStatusBadge');
     
+    // ดึงชื่อจาก DOM (กรณีที่โหลดเสร็จแล้ว) หรือใช้จาก object
+    // (ต้องระวังการดึง textContent อาจจะมี icon ปนมาด้วย เลยใช้ item.winner_name ดีกว่าถ้ามี)
+    let winnerName = item.winner_name || "Unknown"; 
+
     if (item.status === 'sold') {
-        // ถ้ามีชื่อผู้ชนะที่โหลดมาแล้ว ให้ใช้เลย หรือลองดึงจาก DOM
-        const domWinner = document.getElementById(`winner-${id}`)?.innerText;
-        winnerEl.innerText = item.winner_name || domWinner || "กำลังโหลด...";
+        statusBadge.innerText = "SOLD";
+        statusBadge.className = "badge bg-success mb-2";
+        winnerEl.innerText = winnerName;
         winnerEl.className = "text-warning fw-bold";
     } else {
-        winnerEl.innerText = "ไม่มีผู้ชนะ (หมดเวลา)";
-        winnerEl.className = "text-secondary";
+        statusBadge.innerText = "EXPIRED";
+        statusBadge.className = "badge bg-secondary mb-2";
+        // ถ้ามีคนบิดแต่ไม่ถึงราคาขายสด/ไม่จบดีล
+        if(item.last_bidder_uid) {
+            winnerEl.innerText = `${winnerName} (สูงสุด)`;
+            winnerEl.className = "text-white";
+        } else {
+            winnerEl.innerText = "-";
+            winnerEl.className = "text-secondary";
+        }
     }
 
     detailModal.show();
 }
+
+// ทำให้ฟังก์ชัน openHistoryDetail เรียกใช้ได้จาก HTML (onclick)
+window.openHistoryDetail = openHistoryDetail;
