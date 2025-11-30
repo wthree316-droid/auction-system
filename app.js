@@ -14,6 +14,9 @@ let currentProductId = null;
 let currentProductEndTime = null; 
 let unsubscribeProduct = null;
 let unsubscribeBids = null;
+let currentSellerUid = null; // 🔥 เพิ่มตัวแปรเก็บ ID คนขายของสินค้านั้นๆ
+
+// ... (ส่วน A, B, C, D, E เหมือนเดิมเป๊ะๆ ไม่ต้องแก้) ...
 
 // ==========================================
 // A. ระบบค้นหา & กรอง
@@ -239,9 +242,6 @@ onAuthStateChanged(auth, async (user) => {
                 if (docSnap.exists()) setupUserProfile(docSnap.data());
             });
         } else {
-            // IP Check Removed as requested
-            /* if (user.isAnonymous) { ... } */ 
-
             const defaultName = "User_" + user.uid.slice(0,4);
             const autoSecret = generateRandomCode(); 
             await setDoc(userRef, { 
@@ -309,7 +309,7 @@ function updateTimerUI(endTimeMs, textId, badgeId, isModal) {
 }
 
 // ==========================================
-// F. Modal Logic
+// F. Modal Logic (Updated to save sellerUid)
 // ==========================================
 window.openAuction = function(id, title, price, img, desc) {
     currentProductId = id;
@@ -335,6 +335,10 @@ window.openAuction = function(id, title, price, img, desc) {
     unsubscribeProduct = onSnapshot(doc(db, "auctions", id), (docSnapshot) => {
         if (docSnapshot.exists()) {
             const data = docSnapshot.data();
+            
+            // 🔥 เก็บ Seller UID ไว้ในตัวแปร Global เพื่อใช้เช็คตอนกดปุ่ม
+            currentSellerUid = data.seller_uid; 
+
             document.getElementById('modalPrice').innerText = `฿${data.current_price.toLocaleString()}`;
             if(data.end_time_ms) currentProductEndTime = data.end_time_ms;
             
@@ -420,13 +424,9 @@ document.getElementById('auctionModal').addEventListener('hidden.bs.modal', () =
 // 🔥 ฟังก์ชันช่วยอัปโหลดรูปไป Supabase
 // ==========================================
 async function uploadImageToSupabase(file) {
-    // 1. Sanitize filename: Keep only English letters, numbers, dots, and dashes
-    // This removes Thai characters and special symbols that cause "Invalid key" errors
     const fileExt = file.name.split('.').pop();
     const randomString = Math.random().toString(36).substring(2, 15); // Generate random string
     const timestamp = Date.now();
-    
-    // Create a safe, ASCII-only filename
     const fileName = `${timestamp}_${randomString}.${fileExt}`;
 
     const { data, error } = await supabase.storage
@@ -438,7 +438,6 @@ async function uploadImageToSupabase(file) {
         throw new Error("อัปโหลดรูปไม่สำเร็จ: " + error.message);
     }
 
-    // ดึง Public URL
     const { data: publicData } = supabase.storage
         .from('product-images')
         .getPublicUrl(fileName);
@@ -455,7 +454,7 @@ const addForm = document.getElementById('addItemForm');
 if(addForm) {
     addForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        // if(checkBan()) return; // Ensure checkBan is defined or remove if not used in this snippet context
+        if(checkBan()) return;
         
         const title = document.getElementById('inpTitle').value;
         const desc = document.getElementById('inpDesc').value;
@@ -477,11 +476,9 @@ if(addForm) {
         try {
             toggleLoading(true);
             
-            // 🔥 อัปโหลดรูปก่อน
             const file = fileInput.files[0];
             const imageUrl = await uploadImageToSupabase(file);
 
-            // บันทึกข้อมูลลง Firestore
             await addDoc(collection(db, "auctions"), {
                 title: title, 
                 category: category, 
@@ -507,7 +504,7 @@ if(addForm) {
     });
 }
 
-// 2. เปิดหน้าแก้ไขสินค้า (โหลดรูปเดิมมาโชว์)
+// 2. เปิดหน้าแก้ไขสินค้า
 window.openEditModal = async function() {
     if(!currentProductId) return;
     bootstrap.Modal.getInstance(document.getElementById('auctionModal')).hide();
@@ -524,13 +521,11 @@ window.openEditModal = async function() {
         document.getElementById('editPrice').value = data.current_price; 
         document.getElementById('editBuyNowPrice').value = data.buy_now_price || "";
         
-        // เก็บ URL รูปเดิมไว้ใน Hidden Input และแสดงตัวอย่าง
         document.getElementById('currentImageUrl').value = data.image_url;
-        // Check if element exists before setting src to avoid errors if HTML is not updated yet
         const imgDisplay = document.getElementById('editCurrentImgDisplay'); 
         if(imgDisplay) imgDisplay.src = data.image_url;
         
-        document.getElementById('editFile').value = ""; // เคลียร์ช่องเลือกไฟล์ใหม่
+        document.getElementById('editFile').value = ""; 
 
         document.getElementById('editEmail').value = data.contact_email || "";
         if(data.end_time_ms) {
@@ -544,7 +539,7 @@ window.openEditModal = async function() {
     }
 }
 
-// 3. บันทึกการแก้ไข (เช็คว่าเปลี่ยนรูปไหม)
+// 3. บันทึกการแก้ไข
 const editForm = document.getElementById('editItemForm');
 if(editForm) {
     editForm.addEventListener('submit', async (e) => {
@@ -556,9 +551,8 @@ if(editForm) {
         try {
             toggleLoading(true);
             
-            let imageUrl = document.getElementById('currentImageUrl').value; // ใช้รูปเดิมเป็นค่าเริ่มต้น
+            let imageUrl = document.getElementById('currentImageUrl').value; 
 
-            // 🔥 ถ้ามีการเลือกไฟล์ใหม่ ให้อัปโหลดใหม่
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 imageUrl = await uploadImageToSupabase(file);
@@ -569,7 +563,7 @@ if(editForm) {
                 description: document.getElementById('editDesc').value,
                 category: document.getElementById('editCategory').value,
                 buy_now_price: document.getElementById('editBuyNowPrice').value ? Number(document.getElementById('editBuyNowPrice').value) : null,
-                image_url: imageUrl, // ใช้ URL ใหม่ (หรือเก่า)
+                image_url: imageUrl, 
                 contact_email: document.getElementById('editEmail').value,
                 end_time_ms: endTimeMs,
             });
@@ -585,7 +579,7 @@ if(editForm) {
     });
 }
 
-// Helper function for loading (if not already present)
+// Helper function for loading
 function toggleLoading(show) {
     const loader = document.getElementById('loading');
     if (loader) loader.style.display = show ? 'flex' : 'none';
@@ -594,9 +588,16 @@ function toggleLoading(show) {
 window.placeBid = async function() {
     if(checkBan()) return;
     if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อนใช้งาน");
+    
+    // 🔥 ป้องกันเจ้าของประมูลของตัวเอง
+    if(currentUser && currentSellerUid === currentUser.uid) {
+        return alert("คุณไม่สามารถประมูลสินค้าของตัวเองได้!");
+    }
+
     const bidInput = document.getElementById('bidInput');
     const bidAmount = Number(bidInput.value);
     if(!bidAmount || bidAmount <= 0) return alert("กรุณาใส่ราคา");
+    
     try {
         const productRef = doc(db, "auctions", currentProductId);
         const productSnap = await getDoc(productRef);
@@ -613,9 +614,16 @@ window.placeBid = async function() {
         }
     } catch (error) { alert("Error: " + error.message); }
 }
+
 window.buyNow = async function() {
     if(checkBan()) return;
     if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อนใช้งาน");
+    
+    // 🔥 ป้องกันเจ้าของซื้อของตัวเอง
+    if(currentUser && currentSellerUid === currentUser.uid) {
+        return alert("คุณไม่สามารถซื้อสินค้าของตัวเองได้!");
+    }
+
     if(!confirm("ยืนยันการซื้อสดสินค้าชิ้นนี้?")) return;
     try {
         const productRef = doc(db, "auctions", currentProductId);
