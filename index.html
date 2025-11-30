@@ -343,9 +343,11 @@
                                     <input type="email" class="form-control" id="inpEmail" required>
                                 </div>
                             </div>
+                            <!-- 🔥 เปลี่ยนเป็น Input File -->
                             <div class="col-12">
-                                <label class="form-label text-secondary small">ลิงก์รูปภาพ</label>
-                                <input type="text" class="form-control" id="inpFile" required>
+                                <label class="form-label text-secondary small">รูปภาพสินค้า</label>
+                                <input type="file" class="form-control" id="inpFile" accept="image/*" required>
+                                <div class="form-text text-muted small">*รองรับไฟล์ .jpg, .png, .jpeg</div>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-main w-100 mt-4 py-2 fs-5 rounded-pill shadow">ลงขายทันที</button>
@@ -434,6 +436,8 @@
                 <div class="modal-body p-4">
                     <form id="editItemForm">
                         <input type="hidden" id="editProductId">
+                        <input type="hidden" id="currentImageUrl"> <!-- เก็บ URL รูปเดิมไว้ -->
+                        
                         <div class="mb-3"><label class="form-label text-secondary small">ชื่อสินค้า</label><input type="text" class="form-control" id="editTitle" required></div>
                         <div class="mb-3"><label class="form-label text-secondary small">หมวดหมู่</label><select class="form-select" id="editCategory" required><option value="it">📱 ไอที</option><option value="fashion">👕 แฟชั่น</option><option value="amulet">🙏 พระเครื่อง</option><option value="home">🏠 ของใช้</option><option value="other">📦 อื่นๆ</option></select></div>
                         <div class="mb-3"><label class="form-label text-secondary small">รายละเอียด</label><textarea class="form-control" id="editDesc" rows="3" required></textarea></div>
@@ -443,7 +447,17 @@
                         </div>
                         <div class="mb-3"><label class="form-label text-danger small">ปิดประมูลวันที่</label><input type="datetime-local" class="form-control" id="editEndTime" required></div>
                         <div class="mb-3"><label class="form-label text-warning small">ติดต่อ (Email)</label><input type="email" class="form-control" id="editEmail"></div>
-                        <div class="mb-3"><label class="form-label text-secondary small">รูปภาพ</label><input type="text" class="form-control" id="editFile" required></div>
+                        
+                        <!-- 🔥 เปลี่ยนเป็น Input File และแสดงรูปเดิม -->
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">รูปภาพใหม่ (เว้นว่างถ้าใช้รูปเดิม)</label>
+                            <input type="file" class="form-control" id="editFile" accept="image/*">
+                            <div class="mt-2">
+                                <small class="text-secondary">รูปปัจจุบัน:</small>
+                                <img id="editCurrentImgDisplay" src="" style="height: 50px; width: auto; border-radius: 5px; margin-left: 10px;">
+                            </div>
+                        </div>
+                        
                         <button type="submit" class="btn btn-warning w-100 mt-2 fw-bold text-dark">บันทึกการเปลี่ยนแปลง</button>
                     </form>
                 </div>
@@ -504,3 +518,4 @@
     <script type="module" src="app.js"></script>
 </body>
 </html>
+
