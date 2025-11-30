@@ -1,6 +1,7 @@
 import { db, auth } from "./firebase-config.js";
 import { collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, query, orderBy, onSnapshot, limit, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { signInAnonymously, onAuthStateChanged, linkWithCredential, EmailAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { supabase } from "./supabase-client.js";
 
 // Variables
 let currentUser = null;
@@ -425,8 +426,32 @@ document.getElementById('auctionModal').addEventListener('hidden.bs.modal', () =
     currentProductEndTime = null;
 });
 
-// ... (Edit, Add, Profile, Recover Logic เหมือนเดิม) ...
+//  ฟังก์ชันช่วยอัปโหลดรูปไป Supabase
 
+async function uploadImageToSupabase(file) {
+    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '-')}`; // ตั้งชื่อไฟล์ไม่ให้ซ้ำ
+    const { data, error } = await supabase.storage
+        .from('images') // ⚠️ ชื่อ Bucket ต้องตรงกับใน Supabase
+        .upload(fileName, file);
+
+    if (error) {
+        console.error("Supabase Upload Error:", error);
+        throw new Error("อัปโหลดรูปไม่สำเร็จ: " + error.message);
+    }
+
+    // ดึง Public URL
+    const { data: publicData } = supabase.storage
+        .from('images')
+        .getPublicUrl(fileName);
+        
+    return publicData.publicUrl;
+}
+
+// ==========================================
+// G. Add Item & Edit Item (Modified for Upload)
+// ==========================================
+
+// 1. ลงสินค้าใหม่
 const addForm = document.getElementById('addItemForm');
 if(addForm) {
     addForm.addEventListener('submit', async (e) => {
@@ -438,35 +463,59 @@ if(addForm) {
         const price = Number(document.getElementById('inpPrice').value);
         const buyNowPrice = document.getElementById('inpBuyNowPrice').value ? Number(document.getElementById('inpBuyNowPrice').value) : null;
         const email = document.getElementById('inpEmail').value.trim();
-        const imageUrl = document.getElementById('inpFile').value;
+        const fileInput = document.getElementById('inpFile'); // รับไฟล์จาก Input
         const endTimeInput = document.getElementById('inpEndTime').value;
         const category = document.getElementById('inpCategory').value;
         
-        if (!category) return alert("กรุณาเลือกหมวดหมู่");
-        if (!email) return alert("กรุณาระบุอีเมล");
-        if (!endTimeInput) return alert("ระบุเวลาปิด");
+        if (!category) return alert("กรุณาเลือกหมวดหมู่สินค้า");
+        if (!email) return alert("กรุณาระบุอีเมลสำหรับติดต่อ");
+        if (!endTimeInput) return alert("ระบุเวลาปิดประมูล");
+        if (fileInput.files.length === 0) return alert("กรุณาเลือกรูปภาพสินค้า"); // เช็คไฟล์
 
         const endTimeMs = new Date(endTimeInput).getTime();
-        const myName = document.getElementById('navUsername').innerText; // Get current name
+        const myName = document.getElementById('navUsername').innerText;
 
         try {
             toggleLoading(true);
+            
+            // 🔥 อัปโหลดรูปก่อน
+            const file = fileInput.files[0];
+            const imageUrl = await uploadImageToSupabase(file);
+
+            // บันทึกข้อมูลลง Firestore
             await addDoc(collection(db, "auctions"), {
-                title: title, category: category, description: desc, current_price: price, buy_now_price: buyNowPrice,
-                contact_email: email, image_url: imageUrl, status: 'active', 
+                title: title, 
+                category: category, 
+                description: desc, 
+                current_price: price, 
+                buy_now_price: buyNowPrice,
+                contact_email: email,
+                image_url: imageUrl, // ใช้ URL จาก Supabase
+                status: 'active', 
                 seller_uid: currentUser.uid, 
-                seller_name: myName, // 🔥 บันทึกชื่อคนขาย
-                end_time_ms: endTimeMs, created_at: new Date()
+                seller_name: myName,
+                end_time_ms: endTimeMs, 
+                created_at: new Date()
             });
-            toggleLoading(false); alert("ลงสินค้าเรียบร้อย!"); location.reload(); 
-        } catch (error) { toggleLoading(false); alert("Error: " + error.message); }
+            
+            toggleLoading(false); 
+            alert("ลงสินค้าเรียบร้อย!"); 
+            location.reload(); 
+        } catch (error) { 
+            toggleLoading(false); 
+            alert("Error: " + error.message); 
+        }
     });
 }
 
+// 2. เปิดหน้าแก้ไขสินค้า (โหลดรูปเดิมมาโชว์)
 window.openEditModal = async function() {
     if(!currentProductId) return;
     bootstrap.Modal.getInstance(document.getElementById('auctionModal')).hide();
+    
+    toggleLoading(true);
     const docSnap = await getDoc(doc(db, "auctions", currentProductId));
+    
     if(docSnap.exists()) {
         const data = docSnap.data();
         document.getElementById('editProductId').value = currentProductId;
@@ -475,7 +524,12 @@ window.openEditModal = async function() {
         document.getElementById('editCategory').value = data.category || "other"; 
         document.getElementById('editPrice').value = data.current_price; 
         document.getElementById('editBuyNowPrice').value = data.buy_now_price || "";
-        document.getElementById('editFile').value = data.image_url;
+        
+        // เก็บ URL รูปเดิมไว้ใน Hidden Input และแสดงตัวอย่าง
+        document.getElementById('currentImageUrl').value = data.image_url;
+        document.getElementById('editCurrentImgDisplay').src = data.image_url;
+        document.getElementById('editFile').value = ""; // เคลียร์ช่องเลือกไฟล์ใหม่
+
         document.getElementById('editEmail').value = data.contact_email || "";
         if(data.end_time_ms) {
             const date = new Date(data.end_time_ms);
@@ -483,29 +537,52 @@ window.openEditModal = async function() {
             const localISOTime = (new Date(date - tzOffset)).toISOString().slice(0, 16);
             document.getElementById('editEndTime').value = localISOTime;
         }
+        toggleLoading(false);
         new bootstrap.Modal(document.getElementById('editItemModal')).show();
     }
 }
+
+// 3. บันทึกการแก้ไข (เช็คว่าเปลี่ยนรูปไหม)
 const editForm = document.getElementById('editItemForm');
 if(editForm) {
     editForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const pid = document.getElementById('editProductId').value;
         const endTimeMs = new Date(document.getElementById('editEndTime').value).getTime();
+        const fileInput = document.getElementById('editFile');
+        
         try {
+            toggleLoading(true);
+            
+            let imageUrl = document.getElementById('currentImageUrl').value; // ใช้รูปเดิมเป็นค่าเริ่มต้น
+
+            // 🔥 ถ้ามีการเลือกไฟล์ใหม่ ให้อัปโหลดใหม่
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                imageUrl = await uploadImageToSupabase(file);
+            }
+
             await updateDoc(doc(db, "auctions", pid), {
                 title: document.getElementById('editTitle').value,
                 description: document.getElementById('editDesc').value,
                 category: document.getElementById('editCategory').value,
                 buy_now_price: document.getElementById('editBuyNowPrice').value ? Number(document.getElementById('editBuyNowPrice').value) : null,
-                image_url: document.getElementById('editFile').value,
+                image_url: imageUrl, // ใช้ URL ใหม่ (หรือเก่า)
                 contact_email: document.getElementById('editEmail').value,
                 end_time_ms: endTimeMs,
             });
-            alert("แก้ไขสินค้าเรียบร้อย!"); bootstrap.Modal.getInstance(document.getElementById('editItemModal')).hide(); location.reload(); 
-        } catch(e) { alert("Error: " + e.message); }
+
+            toggleLoading(false); 
+            alert("แก้ไขสินค้าเรียบร้อย!"); 
+            bootstrap.Modal.getInstance(document.getElementById('editItemModal')).hide(); 
+            location.reload(); 
+        } catch(e) { 
+            toggleLoading(false); 
+            alert("Error: " + e.message); 
+        }
     });
 }
+
 window.placeBid = async function() {
     if(checkBan()) return;
     if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อนใช้งาน");
@@ -630,3 +707,4 @@ window.recoverAccount = async function() {
 }
 function toggleLoading(show) { const loader = document.getElementById('loading'); if(loader) loader.style.display = show ? 'block' : 'none'; }
 function checkBan() { if(isBanned) { alert("คุณถูกระงับการใช้งาน"); return true; } return false; }
+
