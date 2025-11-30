@@ -3,132 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ประวัติการประมูล - Auction History</title>
-    <!-- Bootstrap 5 CSS -->
+    <title>Auction X - History</title>
+    <!-- ... (CSS เดิมทั้งหมด) ... -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
-    
     <style>
-        :root {
-            --primary-color: #ff3b3b;
-            --secondary-color: #ffb703;
-            --dark-bg: #0f0f0f;
-            --card-bg: rgba(30, 30, 30, 0.7);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-        body { 
-            background-color: var(--dark-bg); 
-            color: #e0e0e0; 
-            font-family: 'Kanit', sans-serif; 
-            min-height: 100vh;
-        }
-        .navbar-glass {
-            background: rgba(15, 15, 15, 0.95);
-            backdrop-filter: blur(12px);
-            border-bottom: var(--glass-border);
-        }
-        .card-history {
-            background-color: #1a1a1a; 
-            border: 1px solid #333; 
-            border-radius: 12px;
-            overflow: hidden;
-            transition: transform 0.2s;
-        }
-        .card-history:hover {
-            transform: translateY(-3px);
-            border-color: #666;
-        }
-        .product-img-list { 
-            height: 200px; 
-            object-fit: cover; 
-            width: 100%; 
-            filter: grayscale(40%); /* ทำให้เทาลงหน่อย */
-        }
-        .winner-badge { 
-            background: linear-gradient(45deg, #ffd700, #b8860b); 
-            color: black; 
-            font-weight: bold; 
-            padding: 2px 8px; 
-            border-radius: 20px; 
-            font-size: 0.75rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            display: inline-block;
-            white-space: nowrap;
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .sold-badge {
-            position: absolute; top: 10px; right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: #2ecc71;
-            border: 1px solid #2ecc71;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            z-index: 10;
-        }
-        .expired-badge {
-            position: absolute; top: 10px; right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: #95a5a6;
-            border: 1px solid #95a5a6;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            z-index: 10;
-        }
-        
-        /* 🔥 สไตล์ตัวหนังสือทับรูป (Overlay Text) */
-        .sold-overlay-text {
-            color: #2ecc71;
-            font-size: 1.5rem;
-            font-weight: 900;
-            border: 3px solid #2ecc71;
-            padding: 5px 15px;
-            transform: rotate(-15deg);
-            background: rgba(0,0,0,0.6);
-            text-transform: uppercase;
-        }
-        .expired-overlay-text {
-            color: #bdc3c7;
-            font-size: 1.5rem;
-            font-weight: 900;
-            border: 3px solid #bdc3c7;
-            padding: 5px 15px;
-            transform: rotate(-15deg);
-            background: rgba(0,0,0,0.6);
-            text-transform: uppercase;
-        }
-
-        /* สไตล์ใน Modal */
-        .sold-text-modal {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg);
-            font-size: 3rem; font-weight: 900; color: #2ecc71; border: 5px solid #2ecc71;
-            padding: 10px 30px; background: rgba(0,0,0,0.8); z-index: 10;
-        }
-        .expired-text-modal {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg);
-            font-size: 3rem; font-weight: 900; color: #bdc3c7; border: 5px solid #bdc3c7;
-            padding: 10px 30px; background: rgba(0,0,0,0.8); z-index: 10;
-        }
-        
-        .loading-container { text-align: center; padding: 50px 0; color: #666; }
-        
-        /* Section Headers */
-        .section-header {
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
-        }
+        :root { --primary-color: #ff3b3b; --secondary-color: #ffb703; --dark-bg: #0f0f0f; --card-bg: rgba(30, 30, 30, 0.7); --glass-border: 1px solid rgba(255, 255, 255, 0.15); }
+        body { background-color: var(--dark-bg); color: #e0e0e0; font-family: 'Kanit', sans-serif; min-height: 100vh; padding-bottom: 80px; }
+        .navbar-glass { background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(12px); border-bottom: var(--glass-border); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3); }
+        .card-history { background: var(--card-bg); border: var(--glass-border); border-radius: 16px; overflow: hidden; transition: all 0.3s; position: relative; }
+        .card-history:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-color: #555; }
+        .product-img-list { width: 100%; height: 200px; object-fit: cover; filter: grayscale(20%); transition: all 0.3s; }
+        .card-history:hover .product-img-list { transform: scale(1.1); filter: grayscale(0%); }
+        .status-badge { position: absolute; top: 10px; right: 10px; padding: 5px 12px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2; }
+        .bg-sold { background: rgba(40, 167, 69, 0.9); color: white; border: 1px solid #28a745; }
+        .bg-expired { background: rgba(108, 117, 125, 0.9); color: white; border: 1px solid #6c757d; }
+        .sold-overlay-text { color: #2ecc71; font-size: 1.5rem; font-weight: 900; border: 3px solid #2ecc71; padding: 5px 15px; transform: rotate(-15deg); background: rgba(0,0,0,0.6); text-transform: uppercase; }
+        .expired-overlay-banner { position: absolute; top: 50%; left: 0; width: 100%; transform: translateY(-50%) rotate(-15deg); background: rgba(52, 58, 64, 0.85); color: #f8f9fa; text-align: center; padding: 10px 0; font-size: 1.5rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; border-top: 2px solid rgba(255,255,255,0.2); border-bottom: 2px solid rgba(255,255,255,0.2); box-shadow: 0 5px 15px rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 5; }
+        .winner-info { background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 8px 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); display: inline-block; }
+        .modal-content { background-color: #181818; border: var(--glass-border); border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.7); }
+        .btn-close-modal { position: absolute; top: 15px; right: 15px; z-index: 1050; background: rgba(0,0,0,0.5); color: white; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .btn-close-modal:hover { background: var(--primary-color); border-color: var(--primary-color); }
+        .stat-card { background: linear-gradient(145deg, rgba(40,40,40,0.6) 0%, rgba(20,20,20,0.8) 100%); border: var(--glass-border); border-radius: 16px; padding: 20px; text-align: center; backdrop-filter: blur(5px); }
+        .stat-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 10px; background: rgba(255,255,255,0.1); }
+        .section-header { border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
         .section-title { font-size: 1.2rem; font-weight: 600; color: #fff; margin: 0; }
         .section-badge { background: #333; color: #aaa; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
+        .loading-container { text-align: center; padding: 60px 0; }
+        .sold-text-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); font-size: 3rem; font-weight: 900; color: #2ecc71; border: 5px solid #2ecc71; padding: 10px 30px; background: rgba(0,0,0,0.8); z-index: 10; }
+        .expired-text-modal-banner { position: absolute; top: 50%; left: 0; width: 100%; transform: translateY(-50%) rotate(-15deg); background: rgba(52, 58, 64, 0.9); color: #f8f9fa; text-align: center; padding: 15px 0; font-size: 2.5rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; border-top: 3px solid rgba(255,255,255,0.3); border-bottom: 3px solid rgba(255,255,255,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 10; }
     </style>
 </head>
 <body>
@@ -136,24 +40,19 @@
     <!-- Navbar -->
     <nav class="navbar navbar-dark navbar-glass sticky-top py-3 mb-4">
         <div class="container">
-            <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-2 transition hover-white">
+            <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
                 <i class="bi bi-arrow-left"></i> <span>กลับหน้าหลัก</span>
             </a>
-            
             <div class="d-flex align-items-center gap-2">
-                <div class="bg-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                    <i class="bi bi-clock-history text-dark"></i>
-                </div>
+                <div class="bg-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;"><i class="bi bi-clock-history text-dark"></i></div>
                 <span class="navbar-brand mb-0 h1 fw-bold text-warning" style="letter-spacing: 1px;">HISTORY</span>
             </div>
-            
-            <div style="width: 100px;"></div> <!-- Spacer -->
+            <div style="width: 100px;"></div>
         </div>
     </nav>
 
     <div class="container pb-5">
-        
-        <!-- 1. Stats Overview -->
+        <!-- Stats -->
         <div class="row g-3 mb-5 justify-content-center">
             <div class="col-6 col-md-4">
                 <div class="stat-card">
@@ -177,8 +76,7 @@
         </div>
 
         <div id="historyContent" style="display: none;">
-            
-            <!-- 2. Sold Items Section -->
+            <!-- Sold Items -->
             <div class="mb-5">
                 <div class="section-header">
                     <i class="bi bi-check-circle-fill text-success fs-5"></i>
@@ -189,7 +87,7 @@
                 <div id="noSoldMsg" class="text-center text-secondary py-4 d-none">ยังไม่มีรายการที่ขายได้</div>
             </div>
 
-            <!-- 3. Expired Items Section -->
+            <!-- Expired Items -->
             <div class="mb-5">
                 <div class="section-header">
                     <i class="bi bi-hourglass-bottom text-secondary fs-5"></i>
@@ -199,33 +97,26 @@
                 <div class="row g-4" id="expiredList"></div>
                 <div id="noExpiredMsg" class="text-center text-secondary py-4 d-none">ไม่มีรายการปิดประมูล</div>
             </div>
-
         </div>
-
     </div>
 
-    <!-- DETAIL MODAL -->
+    <!-- Detail Modal -->
     <div class="modal fade" id="historyDetailModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content overflow-hidden">
                 <button type="button" class="btn-close-modal" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
-                
                 <div class="modal-body p-0">
                     <div class="row g-0">
-                        <!-- รูปภาพ + Overlay -->
                         <div class="col-md-6 bg-black d-flex align-items-center justify-content-center position-relative" style="min-height: 300px;">
-                            <div id="detailImageOverlay"></div> <!-- 🔥 ที่สำหรับใส่คำว่า ขายแล้ว/ปิดประมูล -->
+                            <div id="detailImageOverlay"></div>
                             <img id="detailImage" src="" class="img-fluid" style="max-height: 400px; object-fit: contain;">
                         </div>
-
-                        <!-- ข้อมูล -->
                         <div class="col-md-6 p-4 d-flex flex-column justify-content-center bg-dark">
                             <div class="mb-auto">
                                 <span id="detailStatusBadge" class="badge bg-secondary mb-2">STATUS</span>
                                 <h4 class="text-white fw-bold mb-1" id="detailTitle">...</h4>
                                 <small class="text-secondary d-block mb-3" id="detailDate">ปิดเมื่อ: -</small>
                             </div>
-
                             <div class="py-4 border-top border-bottom border-secondary my-3">
                                 <div class="row text-center">
                                     <div class="col-6 border-end border-secondary">
@@ -238,7 +129,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div class="mt-auto">
                                 <small class="text-secondary fw-bold mb-1 d-block">รายละเอียดสินค้า</small>
                                 <p class="text-white-50 small mb-0" id="detailDesc" style="white-space: pre-line;">...</p>
@@ -250,18 +140,15 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Logic (รวมไว้ที่นี่เพื่อแก้ปัญหา Import) -->
+    <!-- Logic แบบ Standalone (ไม่ต้อง import file) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // ==========================================
-        // ⚠️ Config (ต้องตรงกับ app.js)
-        // ==========================================
+        // ⚠️ Config (ใส่ Config ของคุณที่นี่ให้ครบ)
         const firebaseConfig = {
             apiKey: "AIzaSyCQOSvE07bNi2WfCymRdOabDewgYRs4UM4",
             authDomain: "auction-system-e9801.firebaseapp.com",
@@ -275,9 +162,7 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // ฟังก์ชันหลักสำหรับเริ่มต้นหน้าประวัติ
         function initHistoryPage() {
-            // ตรวจสอบการ Login
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     loadHistory();
@@ -287,7 +172,6 @@
             });
         }
 
-        // ฟังก์ชันโหลดและแสดงข้อมูลประวัติ
         async function loadHistory() {
             const soldListContainer = document.getElementById('soldList');
             const expiredListContainer = document.getElementById('expiredList');
@@ -308,7 +192,7 @@
                 let soldCount = 0;
                 let expiredCount = 0;
                 let revenue = 0;
-                let promises = []; 
+                let promises = [];
 
                 snapshot.forEach(docSnap => {
                     const item = docSnap.data();
@@ -330,40 +214,35 @@
                     }
 
                     if (shouldShow && targetContainer) {
-                        
                         const col = document.createElement('div');
                         col.className = "col-12 col-md-6 col-lg-4 col-xl-3";
                         
                         let statusBadge = isSold ? 
-                            `<span class="sold-badge">SOLD <i class="bi bi-check-lg"></i></span>` : 
-                            `<span class="expired-badge">EXPIRED</span>`;
+                            `<span class="status-badge bg-sold">SOLD <i class="bi bi-check-lg"></i></span>` : 
+                            `<span class="status-badge bg-expired">EXPIRED</span>`;
                         
-                        let overlayText = isSold ? "ขายแล้ว" : "ปิดประมูล";
-                        let overlayClass = isSold ? "sold-overlay-text" : "expired-overlay-text";
-                        
+                        let overlayHtml = isSold ? 
+                            `<div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.5);"><span class="sold-overlay-text">ขายแล้ว</span></div>` :
+                            `<div class="expired-overlay-banner">ปิดประมูลแล้ว</div>`;
+
                         let priceColor = isSold ? "text-success" : "text-secondary";
                         let dateStr = item.end_time_ms ? new Date(item.end_time_ms).toLocaleDateString('th-TH') : "-";
 
                         col.innerHTML = `
                             <div class="card h-100 card-history position-relative" style="cursor: pointer;">
                                 ${statusBadge}
-                                
                                 <div class="position-relative overflow-hidden">
                                     <img src="${item.image_url}" class="card-img-top product-img-list" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
-                                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.5);">
-                                        <span class="${overlayClass}">${overlayText}</span>
-                                    </div>
+                                    ${overlayHtml}
                                 </div>
-
                                 <div class="card-body p-3">
                                     <h6 class="card-title text-truncate text-white mb-1">${item.title}</h6>
                                     <p class="card-text fw-bold ${priceColor} mb-2">จบที่: ฿${item.current_price.toLocaleString()}</p>
-                                    
                                     <div class="d-flex justify-content-between align-items-end border-top border-secondary pt-2 mt-2">
                                         <div>
                                             <small class="text-secondary d-block" style="font-size: 0.7rem;">ผู้ชนะ:</small>
                                             <div id="winner-${docSnap.id}" class="small text-secondary">
-                                                ${isSold ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้ชนะ...' : (item.last_bidder_uid ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้สูงสุด...' : '-')}
+                                                ${isSold ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้ชนะ...' : (item.last_bidder_uid ? '<span class="spinner-border spinner-border-sm" style="width:0.7rem; height:0.7rem;"></span> หาผู้สูงสุด...' : 'ไม่มีผู้ประมูล')}
                                             </div>
                                         </div>
                                         <small class="text-secondary" style="font-size: 0.7rem;">${dateStr}</small>
@@ -376,7 +255,6 @@
                         targetContainer.appendChild(col);
 
                         const winnerUid = item.buyer_uid || item.last_bidder_uid;
-
                         if (winnerUid) {
                             promises.push(
                                 getDoc(doc(db, "users", winnerUid)).then(userSnap => {
@@ -384,7 +262,7 @@
                                     const winnerEl = document.getElementById(`winner-${docSnap.id}`);
                                     if (winnerEl) {
                                         let icon = isSold ? '<i class="bi bi-trophy-fill text-warning"></i>' : '<i class="bi bi-person-fill text-muted"></i>';
-                                        winnerEl.innerHTML = `<span class="winner-badge text-dark">${icon} ${winnerName}</span>`;
+                                        winnerEl.innerHTML = `<div class="winner-info d-inline-block text-white small px-2 py-1 mt-1">${icon} ${winnerName}</div>`;
                                         item.winner_name = winnerName; 
                                     }
                                 })
@@ -417,7 +295,6 @@
 
         function openHistoryDetail(item, id) {
             const detailModal = new bootstrap.Modal(document.getElementById('historyDetailModal'));
-            
             document.getElementById('detailTitle').innerText = item.title;
             document.getElementById('detailImage').src = item.image_url;
             document.getElementById('detailPrice').innerText = `฿${item.current_price.toLocaleString()}`;
@@ -428,12 +305,11 @@
             if (item.status === 'sold') {
                 overlayContainer.innerHTML = '<div class="sold-text-modal">ขายแล้ว</div>';
             } else {
-                overlayContainer.innerHTML = '<div class="expired-text-modal">ปิดประมูล</div>';
+                overlayContainer.innerHTML = '<div class="expired-text-modal-banner">ปิดประมูลแล้ว</div>';
             }
 
             const winnerEl = document.getElementById('detailWinner');
             const statusBadge = document.getElementById('detailStatusBadge');
-            
             let winnerName = item.winner_name || "Unknown"; 
 
             if (item.status === 'sold') {
@@ -452,7 +328,6 @@
                     winnerEl.className = "text-secondary";
                 }
             }
-
             detailModal.show();
         }
 
