@@ -451,27 +451,41 @@
                     }
                 });
 
-                loadingSection.style.display = 'none';
-                historyContent.style.display = 'block';
+                if(loadingSection) loadingSection.style.display = 'none';
+                if(historyContent) historyContent.style.display = 'block';
 
-                document.getElementById('statSoldItems').innerText = soldCount;
-                document.getElementById('statAuctionItems').innerText = auctionCount;
-                document.getElementById('statTotalRevenue').innerText = `฿${totalRevenue.toLocaleString()}`;
+                const statSold = document.getElementById('statSoldItems');
+                if(statSold) statSold.innerText = soldCount;
+
+                const statAuction = document.getElementById('statAuctionItems');
+                if(statAuction) statAuction.innerText = auctionCount;
+
+                const statRevenue = document.getElementById('statTotalRevenue');
+                if(statRevenue) statRevenue.innerText = `฿${totalRevenue.toLocaleString()}`;
                 
-                document.getElementById('soldCountBadge').innerText = soldCount;
-                document.getElementById('expiredCountBadge').innerText = auctionCount;
+                const badgeSold = document.getElementById('soldCountBadge');
+                if(badgeSold) badgeSold.innerText = soldCount;
 
-                if (soldCount === 0) document.getElementById('noSoldMsg').classList.remove('d-none');
-                else document.getElementById('noSoldMsg').classList.add('d-none');
+                const badgeExpired = document.getElementById('expiredCountBadge');
+                if(badgeExpired) badgeExpired.innerText = auctionCount;
 
-                if (auctionCount === 0) document.getElementById('noExpiredMsg').classList.remove('d-none');
-                else document.getElementById('noExpiredMsg').classList.add('d-none');
+                // Empty States
+                const msgNoSold = document.getElementById('noSoldMsg');
+                if(msgNoSold) {
+                    if (soldCount === 0) msgNoSold.classList.remove('d-none');
+                    else msgNoSold.classList.add('d-none');
+                }
+                const msgNoAuction = document.getElementById('noExpiredMsg');
+                if(document.getElementById('noExpiredMsg')) { 
+                     if (auctionCount === 0) document.getElementById('noExpiredMsg').classList.remove('d-none');
+                     else document.getElementById('noExpiredMsg').classList.add('d-none');
+                }
 
                 await Promise.all(promises);
 
             } catch (error) {
                 console.error("Load History Error:", error);
-                loadingSection.innerHTML = `<p class="text-center text-danger">เกิดข้อผิดพลาด: ${error.message}</p>`;
+                if(loadingSection) loadingSection.innerHTML = `<p class="text-center text-danger">เกิดข้อผิดพลาด: ${error.message}</p>`;
             }
         }
 
