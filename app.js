@@ -1,9 +1,5 @@
-// app.js - ฉบับ Refactor ใช้ api.js
-
-// 1. เปลี่ยน Imports: เรียกใช้ Service แทน Firebase SDK โดยตรง
 import { AuthService, UserService, AuctionService, StorageService } from "./api.js";
 
-// Variables (คงเดิม)
 let currentUser = null;
 let currentIp = "Unknown";
 let isBanned = false;
@@ -17,7 +13,7 @@ let unsubscribeBids = null;
 let currentSellerUid = null;
 
 // ==========================================
-// A. ระบบค้นหา & กรอง (UI Logic คงเดิม ไม่ต้องแก้)
+//         A. ระบบค้นหา & กรอง
 // ==========================================
 const searchInput = document.getElementById('searchInput');
 const filterCategory = document.getElementById('filterCategory');
@@ -1036,3 +1032,4 @@ function checkBan() {
         }); 
         return true; } 
         return false; }
+
