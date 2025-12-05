@@ -1,5 +1,5 @@
-import { auth } from "./firebase-config.js"; // ใช้ Auth ของ Firebase จัดการ Login State ฝั่งหน้าบ้าน
-import { supabase } from "./supabase-client.js"; // ใช้ Supabase Upload รูปเหมือนเดิม
+import { auth } from "./firebase-config.js";
+import { supabase } from "./supabase-client.js";
 import { 
     signInAnonymously, onAuthStateChanged, signOut, 
     EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword 
@@ -8,9 +8,8 @@ import {
 // ==========================================
 // 🔧 CONFIGURATION
 // ==========================================
-const API_BASE_URL = "http://auction-backend.zeabur.app";
-const WS_URL = "wss://http://auction-backend.zeabur.app/ws";
-
+const API_BASE_URL = "http://https://auction-backend-1089558422014.asia-southeast1.run.app"; 
+const WS_URL = "ws:https://auction-backend-1089558422014.asia-southeast1.run.app/ws";    
 // ==========================================
 // 🔌 WebSocket Manager (Real-time Engine)
 // ==========================================
