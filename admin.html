@@ -8,130 +8,205 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
     <style>
-        body { background-color: #0f0f0f; color: #e0e0e0; font-family: monospace; }
-        .card-stat { background: #1f1f1f; border-left: 4px solid; padding: 15px; border-radius: 5px; }
-        .border-blue { border-color: #0d6efd; }
-        .border-green { border-color: #198754; }
-        .border-red { border-color: #dc3545; }
-        .table { color: #ccc; }
-        .table-dark { --bs-table-bg: #1a1a1a; }
-        .btn-xs { padding: 2px 6px; font-size: 0.75rem; }
+        :root {
+            --primary-color: #ff6b6b;
+            --secondary-color: #1dd1a1;
+            --bg-color: #f1f2f6;
+            --card-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        body { background-color: var(--bg-color); color: #2d3436; font-family: 'Kanit', sans-serif; }
+        
+        .admin-header {
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        .card-stat { 
+            background: #fff; 
+            border: none;
+            padding: 25px; 
+            border-radius: 20px; 
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s;
+            position: relative; overflow: hidden;
+        }
+        .card-stat:hover { transform: translateY(-5px); }
+        .card-stat::before {
+            content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 5px;
+        }
+        .stat-blue::before { background: #54a0ff; }
+        .stat-green::before { background: #1dd1a1; }
+        .stat-red::before { background: #ff6b6b; }
+
+        .table-custom {
+            background: #fff;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+        .table thead { background-color: #f8f9fa; }
+        .table th { border: none; font-weight: 600; color: #636e72; padding: 15px; }
+        .table td { border-bottom: 1px solid #f1f2f6; padding: 15px; vertical-align: middle; }
+        
+        .nav-tabs .nav-link { color: #636e72; border: none; font-weight: 600; }
+        .nav-tabs .nav-link.active { color: var(--primary-color); border-bottom: 3px solid var(--primary-color); background: transparent; }
+
+        .item-card-admin {
+            background: #fff; border-radius: 15px; padding: 10px;
+            box-shadow: var(--card-shadow); border: 1px solid #fff;
+        }
+        .item-card-admin:hover { border-color: var(--primary-color); }
     </style>
 </head>
 <body>
 
-    <!-- Login Overlay -->
-    <div id="loginOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-black d-flex justify-content-center align-items-center" style="z-index: 9999;">
-        <div class="text-center p-4 border border-danger rounded shadow-lg" style="background:#111; max-width:300px;">
-            <h4 class="text-danger mb-3"><i class="bi bi-shield-lock-fill"></i> ADMIN ONLY</h4>
-            <p id="authStatus" class="text-secondary small mb-3">Connecting...</p>
-            <input type="password" id="adminPass" class="form-control text-center bg-dark text-white border-danger mb-3" placeholder="Password">
-            <button id="unlockBtn" class="btn btn-danger w-100" onclick="checkAdmin()" disabled>ACCESS</button>
+<div id="loginOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-white d-flex justify-content-center align-items-center" style="z-index: 9999;">
+        <div class="text-center p-5 rounded-4 shadow-lg" style="background:#fff; max-width:350px;">
+            <div class="mb-3 text-danger"><i class="bi bi-shield-lock-fill display-1"></i></div>
+            <h4 class="fw-bold mb-2">ADMIN ONLY</h4>
+            <p id="authStatus" class="text-secondary small mb-4">Verifying system...</p>
+            <input type="password" id="adminPass" class="form-control text-center bg-light border-0 mb-3 py-3 rounded-pill" placeholder="Enter Password">
+            <button id="unlockBtn" class="btn btn-danger w-100 rounded-pill py-2 fw-bold" onclick="checkAdmin()" disabled>ACCESS SYSTEM</button>
         </div>
     </div>
 
-    <div class="container-fluid px-4 py-4">
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h3 class="text-white fw-bold mb-0">ADMIN DASHBOARD</h3>
-                <small class="text-secondary">ระบบจัดการหลังบ้าน</small>
+    <div class="admin-header d-flex justify-content-between align-items-center">
+        <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;"><i class="bi bi-hammer"></i></div>
+                <div>
+                    <h4 class="fw-bold mb-0">ADMIN DASHBOARD</h4>
+                    <small class="text-secondary">ระบบจัดการหลังบ้าน</small>
+                </div>
             </div>
-            <a href="index.html" class="btn btn-outline-light btn-sm"><i class="bi bi-house"></i> หน้าหลัก</a>
+            <a href="index.html" class="btn btn-light rounded-pill px-4 fw-bold text-secondary"><i class="bi bi-house me-2"></i>หน้าหลัก</a>
+        </div>
+    </div>
+
+    <div class="container-fluid px-4 pb-5">
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card-stat stat-blue">
+                    <h2 class="fw-bold mb-0 text-dark" id="statUserCount">-</h2>
+                    <small class="text-secondary text-uppercase fw-bold">User ทั้งหมด</small>
+                    <i class="bi bi-people position-absolute bottom-0 end-0 m-3 text-secondary opacity-25 fs-1"></i>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-stat stat-green">
+                    <h2 class="fw-bold mb-0 text-dark" id="statActiveCount">-</h2>
+                    <small class="text-secondary text-uppercase fw-bold">สินค้า Active</small>
+                    <i class="bi bi-box-seam position-absolute bottom-0 end-0 m-3 text-secondary opacity-25 fs-1"></i>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-stat stat-red">
+                    <h2 class="fw-bold mb-0 text-dark" id="statBannedCount">-</h2>
+                    <small class="text-secondary text-uppercase fw-bold">บัญชีที่ถูกแบน</small>
+                    <i class="bi bi-slash-circle position-absolute bottom-0 end-0 m-3 text-secondary opacity-25 fs-1"></i>
+                </div>
+            </div>
         </div>
 
-        <!-- 1. Stats Cards (สรุปยอด) -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="card-stat border-blue">
-                    <h2 class="fw-bold mb-0" id="statUserCount">-</h2>
-                    <small class="text-secondary">USER ทั้งหมด</small>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card-stat border-green">
-                    <h2 class="fw-bold mb-0" id="statActiveCount">-</h2>
-                    <small class="text-secondary">สินค้าที่กำลังขาย</small>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card-stat border-red">
-                    <h2 class="fw-bold mb-0" id="statBannedCount">-</h2>
-                    <small class="text-secondary">โดนแบน</small>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tabs -->
-        <ul class="nav nav-tabs border-secondary mb-3">
+        <ul class="nav nav-tabs border-bottom-0 mb-3">
             <li class="nav-item">
-                <button class="nav-link active text-warning bg-transparent" data-bs-toggle="tab" data-bs-target="#users-tab">👥 จัดการ Users</button>
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#users-tab"><i class="bi bi-people-fill"></i> จัดการ Users</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link text-info bg-transparent" data-bs-toggle="tab" data-bs-target="#items-tab">📦 จัดการสินค้า</button>
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#items-tab"><i class="bi bi-box-seam-fill"></i> จัดการสินค้า</button>
             </li>
         </ul>
 
         <div class="tab-content">
-            <!-- USERS TAB -->
             <div class="tab-pane fade show active" id="users-tab">
-                <div class="d-flex justify-content-between mb-3">
-                    <input type="text" id="searchUser" class="form-control form-control-sm bg-dark text-white border-secondary w-25" placeholder="🔍 ค้นหาชื่อ หรือ IP...">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="loadUsers()"><i class="bi bi-arrow-clockwise"></i> รีโหลด</button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover table-sm border-secondary align-middle">
-                        <thead><tr><th>Name</th><th>IP</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
-                        <tbody id="userTableBody"><tr><td colspan="5" class="text-center py-3 text-muted">Waiting...</td></tr></tbody>
-                    </table>
+                <div class="bg-white p-4 rounded-4 shadow-sm mb-3">
+                    <div class="d-flex justify-content-between mb-3">
+                        <input type="text" id="searchUser" class="form-control border-0 bg-light rounded-pill w-25 px-3" placeholder="🔍 ค้นหาชื่อ...">
+                        <button class="btn btn-outline-secondary rounded-pill px-3" onclick="loadUsers()"><i class="bi bi-arrow-clockwise"></i> รีโหลด</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light"><tr><th>Name</th><th>IP Address</th><th>Joined Date</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody id="userTableBody"><tr><td colspan="5" class="text-center py-4 text-muted">Waiting for data...</td></tr></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- ITEMS TAB -->
             <div class="tab-pane fade" id="items-tab">
-                <div class="d-flex justify-content-between mb-3">
-                    <input type="text" id="searchItem" class="form-control form-control-sm bg-dark text-white border-secondary w-25" placeholder="🔍 ค้นหาชื่อสินค้า...">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="loadItems()"><i class="bi bi-arrow-clockwise"></i> รีโหลด</button>
+                <div class="d-flex justify-content-between mb-4">
+                    <input type="text" id="searchItem" class="form-control border-0 bg-white shadow-sm rounded-pill w-25 px-3" placeholder="🔍 ค้นหาชื่อสินค้า...">
+                    <button class="btn btn-outline-secondary rounded-pill px-3 bg-white border-0 shadow-sm" onclick="loadItems()"><i class="bi bi-arrow-clockwise"></i> รีโหลด</button>
                 </div>
-                <div class="row g-2" id="adminProductList"></div>
+                <div class="row g-3" id="adminProductList"></div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="module">
-        import { db, auth } from "./firebase-config.js";
-        import { collection, getDocs, doc, updateDoc, deleteDoc, orderBy, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const API_URL = "http://localhost:8000";
+        let adminKey = ""; // เก็บ password ที่พิมพ์เข้ามา
 
-        // Global Data Cache (เพื่อการค้นหาที่รวดเร็ว)
-        let allUsers = [];
-        let allItems = [];
+        // Login เข้าหน้า Admin (ตอนนี้แค่เช็ค Pass กับ Backend)
+        async function checkAdmin() {
+            const inputPass = document.getElementById('adminPass').value;
+            const btn = document.getElementById('unlockBtn');
+            
+            // ลองยิงไปขอ Stats ดู ถ้าได้แปลว่ารหัสถูก
+            try {
+                btn.innerHTML = "Checking...";
+                const res = await fetch(`${API_URL}/admin/stats`, {
+                    headers: { "X-Admin-Pass": inputPass }
+                });
 
-        signInAnonymously(auth).then(() => {
-            document.getElementById('authStatus').innerText = "Ready";
-            document.getElementById('authStatus').className = "text-success small mb-3";
-            document.getElementById('unlockBtn').disabled = false;
-        }).catch(e => {
-            document.getElementById('authStatus').innerText = e.message;
-        });
-
-        window.checkAdmin = function() {
-            if(document.getElementById('adminPass').value === "admin123") { 
-                document.getElementById('loginOverlay').classList.add('d-none');
-                loadUsers(); 
-                loadItems();
-            } else { alert("Access Denied"); }
+                if (res.ok) {
+                    // รหัสถูกต้อง!
+                    adminKey = inputPass;
+                    document.getElementById('loginOverlay').classList.add('d-none');
+                    loadStats();
+                    loadUsers();
+                    loadItems();
+                } else {
+                    alert("Wrong Password!");
+                    btn.innerHTML = "ACCESS SYSTEM";
+                }
+            } catch (e) {
+                alert("Connection Error: เช็คว่าเปิด Python Server หรือยัง?");
+                btn.innerHTML = "ACCESS SYSTEM";
+            }
         }
 
-        // --- USERS LOGIC ---
+        // เปิดปุ่มให้กดได้
+        document.getElementById('authStatus').innerText = "System Ready";
+        document.getElementById('authStatus').className = "text-success small mb-3";
+        document.getElementById('unlockBtn').disabled = false;
+
+
+        // --- Functions เรียก API ---
+
+        async function apiCall(endpoint, method="GET") {
+            const res = await fetch(`${API_URL}${endpoint}`, {
+                method: method,
+                headers: { "X-Admin-Pass": adminKey }
+            });
+            return await res.json();
+        }
+
+        async function loadStats() {
+            const data = await apiCall("/admin/stats");
+            document.getElementById('statUserCount').innerText = data.user_count;
+            document.getElementById('statActiveCount').innerText = data.active_item_count;
+            document.getElementById('statBannedCount').innerText = data.banned_count;
+        }
+
+        // --- USERS ---
+        let allUsers = [];
         async function loadUsers() {
-            const q = query(collection(db, "users"), orderBy("created_at", "desc"));
-            const snapshot = await getDocs(q);
-            allUsers = [];
-            snapshot.forEach(doc => { allUsers.push({ id: doc.id, ...doc.data() }) });
-            
-            updateStats();
+            allUsers = await apiCall("/admin/users");
             renderUsers(allUsers);
         }
 
@@ -139,25 +214,32 @@
             const tbody = document.getElementById('userTableBody');
             tbody.innerHTML = "";
             users.forEach(u => {
-                const created = u.created_at ? new Date(u.created_at.seconds * 1000).toLocaleDateString() : "-";
+                const created = u.created_at ? new Date(u.created_at).toLocaleDateString() : "-";
                 const isBanned = u.is_banned;
                 const html = `
                     <tr>
-                        <td class="${isBanned ? 'text-decoration-line-through text-muted' : 'text-white'} fw-bold">${u.displayName || 'No Name'}</td>
-                        <td class="text-secondary small">${u.ip_address || '-'}</td>
-                        <td class="small text-secondary">${created}</td>
-                        <td>${isBanned ? '<span class="badge bg-danger">BANNED</span>' : '<span class="badge bg-success">OK</span>'}</td>
                         <td>
-                            <button class="btn btn-xs ${isBanned ? 'btn-warning' : 'btn-outline-warning'}" onclick="toggleBan('${u.id}', ${isBanned})">${isBanned ? 'UNBAN' : 'BAN'}</button>
-                            <button class="btn btn-xs btn-outline-danger" onclick="deleteUser('${u.id}', '${u.displayName}')">DEL</button>
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-light d-flex justify-content-center align-items-center me-3" style="width:40px;height:40px;">
+                                    <i class="bi bi-person text-secondary"></i>
+                                </div>
+                                <span class="${isBanned ? 'text-decoration-line-through text-muted' : 'fw-bold text-dark'}">${u.displayName || 'No Name'}</span>
+                            </div>
+                        </td>
+                        <td class="text-secondary font-monospace small">${u.ip_address || '-'}</td>
+                        <td class="text-secondary small">${created}</td>
+                        <td>${isBanned ? '<span class="badge bg-danger-subtle text-danger rounded-pill px-3">BANNED</span>' : '<span class="badge bg-success-subtle text-success rounded-pill px-3">ACTIVE</span>'}</td>
+                        <td>
+                            <button class="btn btn-sm ${isBanned ? 'btn-warning' : 'btn-light text-warning'} rounded-pill fw-bold" onclick="toggleBan('${u.id}')">${isBanned ? 'UNBAN' : 'BAN'}</button>
+                            <button class="btn btn-sm btn-light text-danger rounded-circle" onclick="deleteUser('${u.id}')"><i class="bi bi-trash"></i></button>
                         </td>
                     </tr>
                 `;
                 tbody.innerHTML += html;
             });
         }
-
-        // Search Users
+        
+        // Search Filter
         document.getElementById('searchUser').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             const filtered = allUsers.filter(u => 
@@ -167,14 +249,63 @@
             renderUsers(filtered);
         });
 
-        // --- ITEMS LOGIC ---
-        async function loadItems() {
-            const q = query(collection(db, "auctions"), orderBy("created_at", "desc"));
-            const snapshot = await getDocs(q);
-            allItems = [];
-            snapshot.forEach(doc => { allItems.push({ id: doc.id, ...doc.data() }) });
+        // --- ACTIONS ---
+        window.toggleBan = async function(uid) {
+            Swal.fire({
+        title: 'แบนคนไม่ดีใช่ไหม?',
+        text: "จัดไปเลยครับลูกพี่!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d63031', 
+        cancelButtonColor: '#b2bec3',
+        confirmButtonText: 'แบน!',
+        cancelButtonText: 'ปล่อยไป'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            // เรียก API ลบ
+            await apiCall(`/admin/users/${uid}/ban`, "POST");
             
-            updateStats();
+            // แจ้งเตือนว่าลบเสร็จแล้ว
+            Swal.fire(
+                'แบนแล้ว!',
+                'User ถูกแบนจากระบบเรียบร้อย',
+                'success'
+            );
+            loadUsers(); 
+            loadStats();
+        }
+    });
+        }
+
+        window.deleteUser = async function(uid) {
+            Swal.fire({
+        title: 'แน่ใจนะวิ?',
+        text: "ข้อมูล User และสินค้าทั้งหมดจะหายไปกู้คืนไม่ได้นะ!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d63031', 
+        cancelButtonColor: '#b2bec3',
+        confirmButtonText: 'ลบถาวร!',
+        cancelButtonText: 'เก็บไว้ก่อน'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            // เรียก API ลบ
+            await apiCall(`/admin/users/${uid}`, "DELETE");
+            Swal.fire(
+                'ลบแล้ว!',
+                'User ถูกลบออกจากระบบเรียบร้อย',
+                'success'
+            );
+            loadUsers(); 
+            loadStats();
+        }
+    });
+        }
+
+        // --- ITEMS ---
+        let allItems = [];
+        async function loadItems() {
+            allItems = await apiCall("/auctions"); // ใช้ API เดิมที่มีอยู่แล้วได้เลย
             renderItems(allItems);
         }
 
@@ -184,57 +315,54 @@
             items.forEach(item => {
                 const isSold = item.status === 'sold';
                 const html = `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card p-2 d-flex flex-row align-items-center bg-dark border-secondary">
-                            ${isSold ? '<span class="badge bg-success position-absolute top-0 start-0 m-1">SOLD</span>' : ''}
-                            <img src="${item.image_url}" style="width:50px;height:50px;object-fit:cover" class="rounded me-3" onerror="this.src='https://via.placeholder.com/50'">
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="item-card-admin d-flex align-items-center position-relative">
+                            ${isSold ? '<span class="badge bg-success position-absolute top-0 start-0 m-2 shadow-sm">SOLD</span>' : ''}
+                            <img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:10px;" class="me-3 bg-light shadow-sm" onerror="this.src='https://via.placeholder.com/60'">
                             <div class="flex-grow-1 overflow-hidden">
-                                <div class="text-truncate text-white small fw-bold">${item.title}</div>
-                                <div class="text-secondary small">฿${item.current_price}</div>
+                                <div class="text-truncate text-dark fw-bold mb-1">${item.title}</div>
+                                <div class="text-primary fw-bold small">฿${(item.current_price || 0).toLocaleString()}</div>
                             </div>
-                            <button class="btn btn-sm btn-danger" onclick="deleteItem('${item.id}')"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-light text-danger rounded-circle shadow-sm" onclick="deleteItem('${item.id}')"><i class="bi bi-trash-fill"></i></button>
                         </div>
                     </div>
                 `;
                 container.innerHTML += html;
             });
         }
-
-        // Search Items
+        
         document.getElementById('searchItem').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             const filtered = allItems.filter(i => i.title.toLowerCase().includes(val));
             renderItems(filtered);
         });
 
-        // --- STATS ---
-        function updateStats() {
-            document.getElementById('statUserCount').innerText = allUsers.length;
-            document.getElementById('statBannedCount').innerText = allUsers.filter(u => u.is_banned).length;
-            document.getElementById('statActiveCount').innerText = allItems.filter(i => i.status !== 'sold').length;
+        window.deleteItem = async function(itemId) {
+            Swal.fire({
+        title: 'แน่ใจนะวิ?',
+        text: "ข้อมูลสินค้าทั้งหมดจะหายไปกู้คืนไม่ได้นะ!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d63031', 
+        cancelButtonColor: '#b2bec3',
+        confirmButtonText: 'ลบถาวร!',
+        cancelButtonText: 'เก็บไว้ก่อน'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            // เรียก API ลบ
+            await apiCall(`/admin/auctions/${itemId}`, "DELETE");
+
+            Swal.fire(
+                'ลบแล้ว!',
+                'สินค้า ถูกลบออกจากระบบเรียบร้อย',
+                'success'
+            );
+            loadUsers(); 
+            loadStats();
+        }
+    });
         }
 
-        // Actions (Copy จากเดิมได้เลย)
-        window.toggleBan = async function(uid, currentStatus) {
-            if(!confirm("ยืนยันเปลี่ยนสถานะ?")) return;
-            await updateDoc(doc(db, "users", uid), { is_banned: !currentStatus });
-            loadUsers();
-        }
-        window.deleteUser = async function(uid, name) {
-            if(!confirm(`ลบ ${name} และสินค้าที่กำลังขาย?`)) return;
-            const qItems = query(collection(db, "auctions"), where("seller_uid", "==", uid));
-            const itemSnaps = await getDocs(qItems);
-            const promises = [];
-            itemSnaps.forEach(d => { if(d.data().status !== 'sold') promises.push(deleteDoc(d.ref)); });
-            await Promise.all(promises);
-            await deleteDoc(doc(db, "users", uid));
-            loadUsers(); loadItems();
-        }
-        window.deleteItem = async function(itemId) {
-            if(!confirm("ลบสินค้านี้ถาวร?")) return;
-            await deleteDoc(doc(db, "auctions", itemId));
-            loadItems();
-        }
     </script>
 </body>
 </html>
