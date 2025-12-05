@@ -1,9 +1,9 @@
-import { db, auth } from "./firebase-config.js";
-import { collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, query, orderBy, onSnapshot, limit, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { signInAnonymously, onAuthStateChanged, linkWithCredential, EmailAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { supabase } from "./supabase-client.js";
+// app.js - ฉบับ Refactor ใช้ api.js
 
-// Variables
+// 1. เปลี่ยน Imports: เรียกใช้ Service แทน Firebase SDK โดยตรง
+import { AuthService, UserService, AuctionService, StorageService } from "./api.js";
+
+// Variables (คงเดิม)
 let currentUser = null;
 let currentIp = "Unknown";
 let isBanned = false;
@@ -17,7 +17,7 @@ let unsubscribeBids = null;
 let currentSellerUid = null;
 
 // ==========================================
-// A. ระบบค้นหา & กรอง
+// A. ระบบค้นหา & กรอง (UI Logic คงเดิม ไม่ต้องแก้)
 // ==========================================
 const searchInput = document.getElementById('searchInput');
 const filterCategory = document.getElementById('filterCategory');
@@ -49,6 +49,7 @@ function applyFilters() {
     renderProducts(result);
 }
 
+// 🔥 ฟังก์ชันแสดงผลสินค้า (UI Logic คงเดิม)
 function renderProducts(products) {
     const listContainer = document.getElementById('productList');
     if(!listContainer) return;
@@ -65,67 +66,54 @@ function renderProducts(products) {
 
     products.forEach(item => {
         const safeTitle = item.title.replace(/'/g, "\\'");
-        const safeDesc = item.description ? item.description.replace(/'/g, "\\'").replace(/"/g, '&quot;') : "";
+        const safeDesc = (item.description || "").replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' '); 
+        
         const timerId = `timer-${item.id}`;
-        const badgeId = `badge-${item.id}`;
         const endTime = item.end_time_ms || 0;
         
-        let soldOverlay = item.status === 'sold' ? `<div class="position-absolute top-50 start-50 translate-middle bg-danger text-white px-3 py-1 fw-bold fs-4 rotate-n15 border border-2 border-white opacity-75" style="transform: translate(-50%, -50%) rotate(-15deg); z-index:10;">SOLD</div>` : "";
+        let soldOverlay = item.status === 'sold' ? `<div class="sold-overlay"><div class="sold-text">SOLD</div></div>` : "";
         
         const catMap = { 'it': 'ไอที', 'fashion': 'แฟชั่น', 'amulet': 'พระเครื่อง', 'home': 'ของใช้', 'other': 'อื่นๆ' };
         const catName = catMap[item.category] || 'อื่นๆ';
         const sellerName = item.seller_name || "ผู้ขาย";
 
-        // ✨ Logic แสดงราคาแบบ Smart Display (แสดงราคาที่มีอยู่จริง)
+        // Logic แสดงราคา
         let priceDisplayHtml = "";
-        if (item.current_price !== null && item.current_price !== undefined) {
-            // มีราคาประมูล
+        const currentPrice = item.current_price || 0;
+        const buyNowPrice = item.buy_now_price || 0;
+        
+        if (buyNowPrice > 0 && currentPrice >= buyNowPrice) {
+             priceDisplayHtml = `<p class="card-text text-danger fw-bold mb-2 h5">฿${currentPrice.toLocaleString()} (เกินราคาซื้อสด)</p>`;
+        } else if (item.current_price) {
             priceDisplayHtml = `<p class="card-text text-danger fw-bold mb-2 h5">฿${item.current_price.toLocaleString()}</p>`;
         } else if (item.buy_now_price) {
-            // ไม่มีประมูล มีแต่ขายสด
             priceDisplayHtml = `<p class="card-text text-success fw-bold mb-2 h5">สด ฿${item.buy_now_price.toLocaleString()}</p>`;
         } else {
-            // กันเหนียว กรณีไม่มีราคาสักอย่าง
-            priceDisplayHtml = `<p class="card-text text-muted mb-2 small">ไม่ระบุราคา</p>`;
+            priceDisplayHtml = `<p class="card-text text-muted mb-2 small">ไม่ระบุ</p>`;
         }
-        
-        // ใช้ราคาประมูล หรือถ้าไม่มีให้ใช้ 0 (เพื่อส่งไป Modal)
+
         const safePrice = item.current_price !== null ? item.current_price : 0;
 
         const html = `
             <div class="col-6 col-md-4 col-lg-3">
-                <div class="card h-100 cursor-pointer position-relative card-custom overflow-hidden border-0" onclick="openAuction('${item.id}', '${safeTitle}', '${safePrice}', '${item.image_url}', \`${safeDesc}\`)" style="cursor: pointer; background: #1a1a1a;">
+                <div class="card h-100 cursor-pointer position-relative card-custom" onclick="openAuction('${item.id}', '${safeTitle}', '${safePrice}', '${item.image_url}', '${safeDesc}')" style="cursor: pointer;">
                     ${soldOverlay}
-                    
-                    <div class="product-img-wrapper position-relative" style="padding-top: 100%;"> 
-                        <img src="${item.image_url}" class="product-img-list" alt="${item.title}" style="object-fit: cover;">
-                        
+                    <div class="product-img-wrapper"> 
+                        <img src="${item.image_url}" class="product-img-list" alt="${item.title}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                         <div class="position-absolute top-0 start-0 p-2">
                             <span class="badge bg-light text-dark shadow-sm opacity-75">${catName}</span>
                         </div>
-
-                        <div class="position-absolute bottom-0 start-0 w-100 p-3 d-flex flex-column justify-content-end" 
-                             style="background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%); height: 60%;">
-                            
-                            <h5 class="card-title text-white fw-bold mb-1 text-truncate text-shadow">${item.title}</h5>
-                            
-                            <div class="d-flex justify-content-between align-items-end mt-2">
-                                <div class="text-warning small fw-bold">
-                                    <i class="bi bi-clock-history"></i> 
-                                    <span id="${timerId}" class="card-timer" data-end-time="${endTime}">--:--</span>
-                                </div>
-                                <div class="h5 mb-0 text-shadow">${priceDisplayHtml}</div>
-                            </div>
-                        </div>
                     </div>
-                    
-                    <div class="card-footer p-2 bg-dark border-top border-secondary">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
-                                <i class="bi bi-person-fill text-white" style="font-size: 0.8rem;"></i>
+                    <div class="card-body p-3">
+                         <h6 class="card-title text-truncate fw-bold mb-1">${item.title}</h6>
+                         ${priceDisplayHtml}
+                         <div class="d-flex justify-content-between align-items-center mt-2">
+                            <small class="text-secondary text-truncate" style="max-width: 80px;"><i class="bi bi-person"></i> ${sellerName}</small>
+                            <div class="text-warning small fw-bold">
+                                <i class="bi bi-clock"></i> 
+                                <span id="${timerId}" class="card-timer" data-end-time="${endTime}">--:--</span>
                             </div>
-                            <small class="text-secondary text-truncate" style="max-width: 100px;">${sellerName}</small>
-                        </div>
+                         </div>
                     </div>
                 </div>
             </div>
@@ -135,103 +123,144 @@ function renderProducts(products) {
 }
 
 // ==========================================
-// B. Dashboard
+// B. Dashboard (เรียก Service เพื่อคำนวณ)
 // ==========================================
+
 window.openDashboardModal = async function() {
+    // 1. เช็ค Login
+    if(!currentUser) 
+        return Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'กรุณาเข้าสู่ระบบ',
+                    confirmButtonColor: '#ff6b6b'
+                });
+    
+    // 2. เปิด Modal และแสดง Loading
     new bootstrap.Modal(document.getElementById('dashboardModal')).show();
-    if(!currentUser) return;
-    
     const mySellingContainer = document.getElementById('mySellingList');
-    mySellingContainer.innerHTML = "<p class='text-center w-100 small text-secondary py-3'>กำลังโหลด...</p>";
-    const myItems = allProducts.filter(p => p.seller_uid === currentUser.uid);
-    mySellingContainer.innerHTML = "";
-    if(myItems.length === 0) mySellingContainer.innerHTML = "<p class='text-center w-100 small text-secondary py-3'>คุณยังไม่ได้ลงขายสินค้า</p>";
-    
-    myItems.forEach(item => {
-        const statusBadge = item.status === 'sold' ? '<span class="badge bg-success">ขายแล้ว</span>' : '<span class="badge bg-primary">กำลังขาย</span>';
-        let priceShow = item.current_price ? `฿${item.current_price.toLocaleString()}` : (item.buy_now_price ? `สด ฿${item.buy_now_price.toLocaleString()}` : "-");
-        
-        // แก้ไขการส่ง parameter ให้ openAuction รองรับราคา 0 หรือ null
-        let safeP = item.current_price !== null ? item.current_price : 0;
-
-        mySellingContainer.innerHTML += `
-            <div class="col-12 col-md-6"><div class="border border-secondary p-2 rounded bg-black d-flex gap-3 align-items-center" onclick="openAuction('${item.id}', '${item.title}', '${safeP}', '${item.image_url}', '')" style="cursor:pointer">
-            <img src="${item.image_url}" style="width:60px; height:60px; object-fit:cover" class="rounded border border-secondary"><div style="overflow:hidden" class="flex-grow-1"><div class="text-truncate fw-bold text-white">${item.title}</div><div class="d-flex justify-content-between align-items-center mt-1"><span class="text-warning fw-bold">${priceShow}</span>${statusBadge}</div></div></div></div>`;
-    });
-
     const myBiddingContainer = document.getElementById('myBiddingList');
-    myBiddingContainer.innerHTML = `<div class="col-12 text-center py-5"><div class="spinner-border text-info" role="status"></div><p class="text-info mt-2 small">กำลังไล่เช็คลำดับของคุณ...</p></div>`;
+    
+    mySellingContainer.innerHTML = loadSpinner("กำลังโหลดรายการขาย...");
+    myBiddingContainer.innerHTML = loadSpinner("กำลังโหลดรายการประมูล...");
 
-    const biddingPromises = allProducts.map(async (item) => {
-        if (item.seller_uid === currentUser.uid) return null;
-        if (item.last_bidder_uid === currentUser.uid || item.buyer_uid === currentUser.uid) {
-            let winPrice = item.current_price || item.buy_now_price;
-            return { item: item, myRank: 1, myMaxBid: winPrice, isWinner: item.status === 'sold' && (item.last_bidder_uid === currentUser.uid || item.buyer_uid === currentUser.uid) };
-        }
-        try {
-            const bidsRef = collection(db, "auctions", item.id, "bids");
-            const bidsSnap = await getDocs(bidsRef);
-            if (bidsSnap.empty) return null;
-            const allBidders = {};
-            bidsSnap.forEach(doc => {
-                const b = doc.data();
-                if (!allBidders[b.bidder_uid] || b.amount > allBidders[b.bidder_uid]) {
-                    allBidders[b.bidder_uid] = b.amount;
-                }
-            });
-            if (!allBidders[currentUser.uid]) return null;
-            const sortedRanks = Object.keys(allBidders).sort((a, b) => allBidders[b] - allBidders[a]);
-            const myRank = sortedRanks.indexOf(currentUser.uid) + 1;
-            const myMaxBid = allBidders[currentUser.uid];
-            return { item: item, myRank: myRank, myMaxBid: myMaxBid, isWinner: false };
-        } catch (e) { return null; }
-    });
+    try {
+        // 3. เรียกข้อมูลจาก Python Backend 🚀
+        const data = await UserService.getDashboardData();
+        
+        // 4. Render: รายการที่ขาย (Selling)
+        renderMySelling(data.selling, mySellingContainer);
+        
+        // 5. Render: รายการที่ประมูล (Bidding)
+        renderMyBidding(data.bidding, myBiddingContainer);
 
-    const results = await Promise.all(biddingPromises);
-    const myParticipatingItems = results.filter(r => r !== null);
+    } catch (error) {
+        console.error(error);
+        mySellingContainer.innerHTML = `<p class="text-danger text-center py-3">เกิดข้อผิดพลาด: ${error.message}</p>`;
+        myBiddingContainer.innerHTML = "";
+    }
+}
 
-    myBiddingContainer.innerHTML = "";
-    if (myParticipatingItems.length === 0) {
-        myBiddingContainer.innerHTML = "<p class='text-center w-100 small text-secondary py-3'>คุณยังไม่ได้ร่วมประมูลสินค้าใดๆ</p>";
+// --- Helper Functions สำหรับ Render HTML ---
+
+function loadSpinner(text) {
+    return `<div class="col-12 text-center py-5"><div class="spinner-border text-danger" role="status"></div><p class="text-secondary mt-3 small">${text}</p></div>`;
+}
+
+function renderMySelling(items, container) {
+    container.innerHTML = "";
+    if (items.length === 0) {
+        container.innerHTML = "<p class='text-center w-100 small text-secondary py-3'>คุณยังไม่ได้ลงขายสินค้า</p>";
         return;
     }
-    myParticipatingItems.sort((a, b) => a.myRank - b.myRank);
 
-    myParticipatingItems.forEach(data => {
-        const { item, myRank, myMaxBid, isWinner } = data;
-        let rankClass = "rank-other", rankText = `ลำดับที่ ${myRank}`;
-        if (isWinner) { rankClass = "bg-success text-white"; rankText = "🏆 ชนะประมูล!"; }
-        else if (myRank === 1) { rankClass = "rank-1"; rankText = "🥇 ผู้นำสูงสุด"; }
-        else if (myRank === 2) { rankClass = "rank-2"; rankText = "🥈 ลำดับที่ 2"; }
-        else if (myRank === 3) { rankClass = "rank-3"; rankText = "🥉 ลำดับที่ 3"; }
-
-        const isSold = item.status === 'sold';
-        const statusMsg = isSold ? (isWinner ? "จบแล้ว (คุณได้ของ)" : "จบแล้ว (แพ้)") : "กำลังแข่ง...";
-        const cardBorder = isWinner ? "border-success" : (myRank === 1 ? "border-warning" : "border-secondary");
+    items.forEach(item => {
+        const statusBadge = item.status === 'sold' ? '<span class="badge bg-success">ขายแล้ว</span>' : '<span class="badge bg-primary">กำลังขาย</span>';
+        const price = item.current_price || item.buy_now_price || 0;
         
-        const currentP = item.current_price || item.buy_now_price || 0;
-        // ส่งค่าราคาที่ปลอดภัยไปเปิด Modal
-        const safeP = item.current_price !== null ? item.current_price : 0;
+        container.innerHTML += `
+            <div class="col-12 col-md-6">
+                <div class="border p-2 rounded bg-white shadow-sm d-flex gap-3 align-items-center" onclick="openAuction('${item.id}', '${item.title}', ${price}, '${item.image_url}', '')" style="cursor:pointer">
+                    <img src="${item.image_url}" style="width:60px; height:60px; object-fit:cover" class="rounded bg-light">
+                    <div style="overflow:hidden" class="flex-grow-1">
+                        <div class="text-truncate fw-bold text-dark">${item.title}</div>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="text-danger fw-bold">฿${price.toLocaleString()}</span>
+                            ${statusBadge}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    });
+}
 
-        myBiddingContainer.innerHTML += `
-            <div class="col-12 col-md-6"><div class="border ${cardBorder} p-2 rounded bg-black d-flex gap-3 align-items-center position-relative" onclick="openAuction('${item.id}', '${item.title}', '${safeP}', '${item.image_url}', '')" style="cursor:pointer"><img src="${item.image_url}" style="width:70px; height:70px; object-fit:cover" class="rounded"><div style="overflow:hidden" class="flex-grow-1"><div class="text-truncate fw-bold text-white mb-1">${item.title}</div><div class="d-flex justify-content-between align-items-center"><div><span class="rank-badge ${rankClass}">${rankText}</span></div><div class="text-end"><div class="small text-secondary" style="font-size:0.7rem;">ราคาปัจจุบัน</div><div class="text-danger fw-bold">฿${currentP.toLocaleString()}</div></div></div><div class="d-flex justify-content-between align-items-center mt-2 border-top border-secondary pt-1"><span class="small text-secondary" style="font-size:0.75rem;">${statusMsg}</span><span class="small text-muted" style="font-size:0.75rem;">เสนอไป: ฿${myMaxBid.toLocaleString()}</span></div></div></div></div>`;
+function renderMyBidding(list, container) {
+    container.innerHTML = "";
+    if (list.length === 0) {
+        container.innerHTML = "<p class='text-center w-100 small text-secondary py-3'>คุณยังไม่ได้ร่วมประมูลสินค้าใดๆ</p>";
+        return;
+    }
+
+    list.forEach(data => {
+        const item = data.item;
+        const myRank = data.my_rank;
+        const myMaxBid = data.my_max_bid;
+        const isWinner = data.is_winner;
+
+        let rankClass = "bg-light text-secondary";
+        let rankText = "กำลังแข่ง";
+        
+        if (isWinner) { 
+            rankClass = "bg-success text-white"; 
+            rankText = "🏆 ชนะประมูล!"; 
+        } else if (item.status === 'sold') {
+            rankClass = "bg-secondary text-white";
+            rankText = "❌ แพ้";
+        } else if (myRank === 1) { 
+            rankClass = "bg-warning text-dark"; 
+            rankText = "🥇 ผู้นำสูงสุด"; 
+        } else {
+            rankText = "รองจ่าฝูง";
+        }
+
+        const currentP = item.current_price || item.buy_now_price || 0;
+
+        container.innerHTML += `
+            <div class="col-12 col-md-6">
+                <div class="border p-2 rounded bg-white shadow-sm d-flex gap-3 align-items-center" onclick="openAuction('${item.id}', '${item.title}', ${currentP}, '${item.image_url}', '')" style="cursor:pointer">
+                    <img src="${item.image_url}" style="width:70px; height:70px; object-fit:cover" class="rounded bg-light">
+                    <div style="overflow:hidden" class="flex-grow-1">
+                        <div class="text-truncate fw-bold text-dark mb-1">${item.title}</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div><span class="badge ${rankClass}">${rankText}</span></div>
+                            <div class="text-end">
+                                <div class="small text-secondary" style="font-size:0.7rem;">ราคาปัจจุบัน</div>
+                                <div class="text-danger fw-bold">฿${currentP.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-1">
+                            <span class="small text-muted" style="font-size:0.75rem;">เสนอไป: ฿${myMaxBid.toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
     });
 }
 
 // ==========================================
-// C. Load Products
+// C. Load Products (ใช้ Service)
 // ==========================================
-async function loadProducts() {
+function loadProducts() {
     const listContainer = document.getElementById('productList');
     if(!listContainer) return;
-    const q = query(collection(db, "auctions"), orderBy("created_at", "desc")); 
-    onSnapshot(q, (snapshot) => {
+    
+    // 🔥 เรียก Service
+    AuctionService.subscribeAuctions((snapshot) => {
         allProducts = [];
         snapshot.forEach((doc) => {
             const data = doc.data();
             data.id = doc.id;
             
-            // 🔥 แก้ไขเงื่อนไขการกรอง (สำคัญมาก!)
             const isSold = data.status === 'sold';
             const isExpired = data.end_time_ms && new Date().getTime() > data.end_time_ms;
 
@@ -239,39 +268,178 @@ async function loadProducts() {
             if (!isSold && !isExpired) {
                 allProducts.push(data);
             }
-            // ถ้าอยากให้โชว์สินค้าหมดเวลาด้วย (แต่ยังไม่ขาย) ให้ลบเงื่อนไข && !isExpired ออก
         });
         applyFilters();
     });
 }
 loadProducts();
 
-// ... (Auth & System เหมือนเดิม) ...
+// ==========================================
+// D. Auth & User System (ใช้ Service)
+// ==========================================
 function generateRandomCode() { const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'; let result = ''; for (let i = 0; i < 13; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); } return result; }
-async function initSystem() { try { const res = await fetch('https://api.ipify.org?format=json'); const data = await res.json(); currentIp = data.ip; } catch (e) { } signInAnonymously(auth).catch((error) => console.error("Login Error:", error)); }
+
+async function initSystem() { 
+    try { 
+        currentIp = await AuthService.getClientIp(); // ใช้ Service
+    } catch (e) { } 
+    
+    // AuthService.loginAnonymous().catch((error) => console.error("Login Error:", error)); // ใช้ Service
+}
 initSystem();
-window.logoutSystem = async function() { if(!confirm("ยืนยันการออกจากระบบ?")) return; await signOut(auth); window.location.reload(); }
-onAuthStateChanged(auth, async (user) => {
+
+window.logoutSystem = async function() { 
+    Swal.fire({
+        title: 'ออกจากระบบ?',
+        text: "คุณต้องการ Log out ใช่หรือไม่",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff6b6b', 
+        cancelButtonColor: '#b2bec3',
+        confirmButtonText: 'ใช่, ออกเลย',
+        cancelButtonText: 'ยกเลิก'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            await AuthService.logout(); 
+            window.location.reload();
+        }
+    }); 
+}
+
+
+AuthService.onUserChange(async (user) => {
     if (user) {
         currentUser = user;
-        const btnLogin = document.getElementById('btnLogin'); const btnLogout = document.getElementById('btnLogout');
+        
+        // จัดการปุ่ม UI ให้ถูกต้องทันที
+        const btnLogin = document.getElementById('btnLogin'); 
+        const btnLogout = document.getElementById('btnLogout');
         if (btnLogin && btnLogout) {
-            if (user.isAnonymous) { btnLogin.classList.remove('d-none'); btnLogout.classList.add('d-none'); } 
-            else { btnLogin.classList.add('d-none'); btnLogout.classList.remove('d-none'); }
+            if (user.isAnonymous) { 
+                btnLogin.classList.remove('d-none'); 
+                btnLogout.classList.add('d-none'); 
+            } else { 
+                btnLogin.classList.add('d-none'); 
+                btnLogout.classList.remove('d-none'); 
+            }
         }
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) { onSnapshot(userRef, (docSnap) => { if (docSnap.exists()) setupUserProfile(docSnap.data()); }); } 
-        else { const defaultName = "User_" + user.uid.slice(0,4); const autoSecret = generateRandomCode(); await setDoc(userRef, { displayName: defaultName, uid: user.uid, secret_code: autoSecret, ip_address: currentIp, contact_email: user.email || "", created_at: new Date() }); onSnapshot(userRef, (docSnap) => { if (docSnap.exists()) setupUserProfile(docSnap.data()); }); }
+
+        // ดึงข้อมูล Guest ใหม่
+        const userSnap = await UserService.getUserProfile(user.uid);
+        
+        // 🔍 เช็คของเก่าในเครื่อง
+        const savedSecret = localStorage.getItem('my_guest_secret');
+        
+        // ถ้าเป็น Guest และข้อมูลในเครื่องไม่ตรงกับคนปัจจุบัน (แสดงว่าเรา Logout ออกมาแล้วได้ร่างใหม่)
+        const isNewIdentity = user.isAnonymous && savedSecret && 
+                             (!userSnap.exists() || userSnap.data()?.secret_code !== savedSecret);
+
+        if (isNewIdentity) {
+            // 🛑 หยุด! เจอเซฟเก่า อย่าเพิ่งใช้ร่างใหม่
+            console.log("Found old secret:", savedSecret);
+            
+            Swal.fire({
+                title: 'พบข้อมูลเดิมในเครื่อง!',
+                text: 'คุณเคยใช้งานบัญชี Guest ไว้ ต้องการกู้คืนข้อมูลเดิมหรือไม่?',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#1dd1a1',
+                confirmButtonText: 'ใช่! กู้คืนข้อมูลเดิม',
+                cancelButtonText: 'ไม่ (เริ่มใหม่ทั้งหมด)'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        // ส่งร่างใหม่ (user) ไปสวมรอยเป็นร่างเก่า (savedSecret)
+                        const oldName = await UserService.recoverAccount(user, savedSecret);
+                        
+                        // กู้สำเร็จ! อัปเดตรหัสลับในเครื่องให้เป็นรหัสของ User ปัจจุบัน (เพราะย้ายข้อมูลมาแล้ว)
+                        // หมายเหตุ: การ Recover ใน Backend เราย้ายข้อมูลมาหา UID ใหม่ ดังนั้น Secret จะเปลี่ยนตาม UID ใหม่
+                        // เราต้องอนุญาตให้ Save ทับได้แล้วตอนนี้
+                        localStorage.setItem('my_guest_secret', userSnap.data()?.secret_code || savedSecret); // *แก้ Logic Backend ให้ส่ง Secret ใหม่กลับมาจะดีมาก*
+                        
+                        Swal.fire('ยินดีต้อนรับกลับ', `คุณ ${oldName}`, 'success').then(()=> window.location.reload());
+                    } catch (e) {
+                        Swal.fire('กู้คืนไม่สำเร็จ', 'ข้อมูลเก่าอาจถูกลบไปแล้ว', 'error');
+                        localStorage.removeItem('my_guest_secret'); // ลบของเสียทิ้ง
+                    }
+                } else {
+                    // เลือกเริ่มใหม่ -> ลบความทรงจำเก่าทิ้ง แล้วจำคนใหม่แทน
+                    localStorage.removeItem('my_guest_secret');
+                    // บังคับ Save คนใหม่ทันที
+                    if(userSnap.exists()) localStorage.setItem('my_guest_secret', userSnap.data().secret_code);
+                    window.location.reload();
+                }
+            });
+        } 
+        
+        // โหลดข้อมูลตามปกติ
+        if (userSnap.exists()) {
+            setupUserProfile(userSnap.data());
+            // Realtime Update Profile
+            UserService.subscribeProfile(user.uid, (docSnap) => { 
+                if (docSnap.exists()) setupUserProfile(docSnap.data()); 
+            });
+        } else {
+             // สร้าง Guest ใหม่ (ถ้ายังไม่มีใน DB)
+             setupNewGuestProfile(user);
+        }
+
+    } else {
+        // ถ้าไม่มี User (เพิ่งเข้าเว็บ) -> Login Guest
+        AuthService.loginAnonymous().catch(console.error);
     }
 });
-function setupUserProfile(data) { userProfileCache = data; isBanned = data.is_banned; updateUIName(data.displayName); if(document.getElementById('profileSecretCode')) { document.getElementById('profileSecretCode').value = data.secret_code || ""; document.getElementById('profileEmail').value = data.contact_email || ""; } const isLinked = currentUser.providerData.some(p => p.providerId === 'password'); const linkSection = document.getElementById('linkAccountSection'); if(isLinked && linkSection) { linkSection.innerHTML = `<div class="text-success text-center py-2"><i class="bi bi-check-circle-fill"></i> บัญชีนี้ผูกกับอีเมลแล้ว</div>`; } if(isBanned) document.body.innerHTML = "<div class='vh-100 d-flex justify-content-center align-items-center bg-black'><h1 class='text-danger'>🚫 BANNED</h1></div>"; }
+// ฟังก์ชันแยกออกมาเพื่อความสะอาด (สร้าง Profile ใหม่)
+async function setupNewGuestProfile(user) {
+    const defaultName = "Guest_" + user.uid.slice(0,4); 
+    const autoSecret = generateRandomCode(); 
+    const userData = { 
+        displayName: defaultName, 
+        uid: user.uid, 
+        secret_code: autoSecret, 
+        ip_address: currentIp, 
+        contact_email: user.email || "", 
+        created_at: new Date() 
+    };
+        await UserService.createProfile(user.uid, userData);
+    UserService.subscribeProfile(user.uid, (docSnap) => { 
+        if (docSnap.exists()) setupUserProfile(docSnap.data()); 
+    }); 
+}
+
+function setupUserProfile(data) { 
+    userProfileCache = data; 
+    isBanned = data.is_banned; 
+    updateUIName(data.displayName); 
+    if(document.getElementById('profileSecretCode')) { 
+        document.getElementById('profileSecretCode').value = data.secret_code || ""; 
+        document.getElementById('profileEmail').value = data.contact_email || ""; 
+    }
+        // ✅ เพิ่มใหม่: ถ้าเป็น Guest ให้แอบจด "รหัสลับ" ใส่เครื่องไว้
+    if (currentUser && currentUser.isAnonymous && data.secret_code) {
+        const oldSecret = localStorage.getItem('my_guest_secret');
+        
+        // ถ้ามีของเก่าอยู่แล้ว แต่ไม่ตรงกับตัวปัจจุบัน (แปลว่าเป็น Guest ใหม่) -> ห้ามทับ!! รอถามก่อน
+        if (!oldSecret || oldSecret === data.secret_code) {
+             localStorage.setItem('my_guest_secret', data.secret_code);
+        }
+    }
+    const isLinked = currentUser.providerData.some(p => p.providerId === 'password'); 
+    const linkSection = document.getElementById('linkAccountSection'); 
+    if(isLinked && linkSection) { 
+        linkSection.innerHTML = `<div class="text-success text-center py-2"><i class="bi bi-check-circle-fill"></i> บัญชีนี้ผูกกับอีเมลแล้ว</div>`; 
+    } 
+    if(isBanned) document.body.innerHTML = "<div class='vh-100 d-flex justify-content-center align-items-center bg-danger'><h1 class='text-white'>🚫 BANNED</h1></div>"; 
+}
+
 function updateUIName(name) { const el = document.getElementById('navUsername'); if(el) el.innerText = name; }
+
+// Timer Logic (คงเดิม เพราะทำงานฝั่ง Client)
 setInterval(() => { const modal = document.getElementById('auctionModal'); if (currentProductEndTime && modal && modal.classList.contains('show')) { updateTimerUI(currentProductEndTime, 'modalTimer', 'modalTimerBadge', true); } document.querySelectorAll('.card-timer').forEach(el => { const endTime = Number(el.dataset.endTime); const badgeId = el.id.replace('timer-', 'badge-'); updateTimerUI(endTime, el.id, badgeId, false); }); }, 1000);
 function updateTimerUI(endTimeMs, textId, badgeId, isModal) { const now = new Date().getTime(); const distance = endTimeMs - now; const textEl = document.getElementById(textId); const badgeEl = document.getElementById(badgeId); if (!textEl) return; if (distance < 0) { textEl.innerText = "ปิดประมูลแล้ว"; if(badgeEl) { badgeEl.className = "badge bg-secondary"; if(badgeEl.parentElement.classList.contains('text-warning')) { badgeEl.parentElement.className = "text-danger small fw-bold"; } } if(isModal) { document.getElementById('bidControlSection').classList.add('d-none'); document.getElementById('buyNowSection').classList.add('d-none'); if(document.getElementById('soldBadge').classList.contains('d-none')) { document.getElementById('auctionEndedMsg').classList.remove('d-none'); } else { document.getElementById('auctionEndedMsg').classList.add('d-none'); } } } else { const days = Math.floor(distance / (1000 * 60 * 60 * 24)); const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)); const seconds = Math.floor((distance % (1000 * 60)) / 1000); let timeString = ""; if(days > 0) timeString += `${days}วัน `; timeString += `${hours}ชม. ${minutes}น. ${seconds}วิ.`; textEl.innerText = timeString; if(distance < 5 * 60 * 1000 && badgeEl) { badgeEl.className = "badge bg-danger animate__animated animate__flash"; } } }
 
 // ==========================================
-// F. Modal Logic (ปรับการแสดงผลปุ่มให้ยืดหยุ่น)
+// F. Modal Logic (ใช้ Service)
 // ==========================================
 window.openAuction = function(id, title, price, img, desc) {
     currentProductId = id;
@@ -282,7 +450,6 @@ window.openAuction = function(id, title, price, img, desc) {
     document.getElementById('bidInput').value = "";
     document.getElementById('bidHistoryList').innerHTML = "<div class='text-center small mt-4 text-secondary'>กำลังโหลดประวัติ...</div>";
     
-    // Reset ซ่อนทุกปุ่มก่อน
     document.getElementById('bidControlSection').classList.add('d-none');
     document.getElementById('buyNowSection').classList.add('d-none');
     document.getElementById('auctionEndedMsg').classList.add('d-none');
@@ -297,12 +464,12 @@ window.openAuction = function(id, title, price, img, desc) {
     if (unsubscribeProduct) unsubscribeProduct();
     if (unsubscribeBids) unsubscribeBids();
 
-    unsubscribeProduct = onSnapshot(doc(db, "auctions", id), (docSnapshot) => {
+    // 🔥 เรียก Service: Subscribe รายละเอียดสินค้า
+    unsubscribeProduct = AuctionService.subscribeAuctionDetail(id, (docSnapshot) => {
         if (docSnapshot.exists()) {
             const data = docSnapshot.data();
             currentSellerUid = data.seller_uid;
 
-            // 🔥 แสดงราคาให้ถูกต้องใน Modal
             const modalPrice = document.getElementById('modalPrice');
             if (data.current_price !== null && data.current_price !== undefined) {
                 modalPrice.innerText = `฿${data.current_price.toLocaleString()}`;
@@ -315,82 +482,81 @@ window.openAuction = function(id, title, price, img, desc) {
             }
 
             if(data.end_time_ms) currentProductEndTime = data.end_time_ms;
-            if(data.contact_email) { document.getElementById('modalEmailLink').href = `mailto:${data.contact_email}`; document.getElementById('modalEmailLink').classList.remove('d-none'); }
+            
+            if(data.contact_email) {
+                document.getElementById('modalEmailLink').href = `mailto:${data.contact_email}`;
+                document.getElementById('modalEmailLink').classList.remove('d-none');
+            }
             
             const catMap = { 'it': 'ไอที', 'fashion': 'แฟชั่น', 'amulet': 'พระเครื่อง', 'home': 'ของใช้', 'other': 'อื่นๆ' };
             document.getElementById('modalCategoryBadge').innerText = catMap[data.category] || 'สินค้าทั่วไป';
 
-            if (data.seller_name) document.getElementById('modalSellerName').innerText = data.seller_name;
-            else if(data.seller_uid) getDoc(doc(db, "users", data.seller_uid)).then(uSnap => { if(uSnap.exists()) document.getElementById('modalSellerName').innerText = uSnap.data().displayName; });
+            if (data.seller_name) {
+                document.getElementById('modalSellerName').innerText = data.seller_name;
+            } else if(data.seller_uid) {
+                UserService.getUserProfile(data.seller_uid).then(uSnap => {
+                    if(uSnap.exists()) document.getElementById('modalSellerName').innerText = uSnap.data().displayName;
+                });
+            }
 
             if (currentUser && currentUser.uid === data.seller_uid && data.status !== 'sold') {
                 document.getElementById('modalEditBtn').classList.remove('d-none');
-            } else { document.getElementById('modalEditBtn').classList.add('d-none'); }
+            } else {
+                document.getElementById('modalEditBtn').classList.add('d-none');
+            }
 
             if (data.status === 'sold') {
-                const soldBadge = document.getElementById('soldBadge');
-                const soldMsg = document.getElementById('soldMsg');
-                const bidSec = document.getElementById('bidControlSection');
-                const buySec = document.getElementById('buyNowSection');
-                const endMsg = document.getElementById('auctionEndedMsg');
-
-                if(soldBadge) soldBadge.classList.remove('d-none');
-                if(soldMsg) soldMsg.classList.remove('d-none');
-                if(bidSec) bidSec.classList.add('d-none');
-                if(buySec) buySec.classList.add('d-none');
-                if(endMsg) endMsg.classList.add('d-none');
-                if(editBtn) editBtn.classList.add('d-none');
-                
+                document.getElementById('soldBadge').classList.remove('d-none');
+                document.getElementById('soldMsg').classList.remove('d-none');
                 currentProductEndTime = 0; 
             } else {
-                // 1. ปุ่มซื้อสด: ถ้ามีราคาซื้อสด -> โชว์
                 if (data.buy_now_price && data.buy_now_price > 0) {
                     document.getElementById('buyNowSection').classList.remove('d-none');
                     document.getElementById('buyNowPriceDisplay').innerText = `฿${data.buy_now_price.toLocaleString()}`;
                 }
-
-                // 2. ช่องประมูล: ถ้ามีราคาประมูล -> โชว์
                 if (data.current_price !== null && data.current_price !== undefined) {
                     document.getElementById('bidControlSection').classList.remove('d-none');
                 }
             }
         }
     });
-    // ... (Bids History ) ...
-    const bidsRef = collection(db, "auctions", id, "bids");
-    const q = query(bidsRef, orderBy("amount", "desc"), limit(20));
-    unsubscribeBids = onSnapshot(q, (snapshot) => {
+
+    // 🔥 เรียก Service: Subscribe ประวัติการบิด
+    unsubscribeBids = AuctionService.subscribeBids(id, (snapshot) => {
         const historyList = document.getElementById('bidHistoryList');
         if(document.getElementById('bidCount')) document.getElementById('bidCount').innerText = snapshot.size;
+        
         historyList.innerHTML = "";
-        if (snapshot.empty) historyList.innerHTML = "<div class='text-center text-secondary small mt-4'>ยังไม่มีข้อเสนอ</div>";
-        else {
+        if (snapshot.empty) {
+            historyList.innerHTML = "<div class='text-center text-secondary small mt-2'>ยังไม่มีข้อเสนอ<br>เป็นคนแรกสิ!</div>";
+        } else {
             snapshot.forEach((doc) => {
                 const bid = doc.data();
                 const timeStr = bid.timestamp ? new Date(bid.timestamp.seconds * 1000).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}) : "";
-                const html = `<div class="bid-history-item d-flex justify-content-between border-bottom border-secondary py-2 px-2 align-items-center" style="border-color: #333 !important;"><div class="d-flex align-items-center gap-2"><i class="bi bi-person-circle text-secondary"></i><div><div class="text-white fw-bold small">${bid.bidder_name}</div><small class="text-secondary" style="font-size: 0.65rem;">${timeStr}</small></div></div><div class="text-success fw-bold">฿${bid.amount.toLocaleString()}</div></div>`;
+                const html = `
+                    <div class="d-flex justify-content-between border-bottom py-2 px-2 align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-circle text-secondary"></i>
+                            <div>
+                                <div class="text-dark fw-bold small">${bid.bidder_name}</div>
+                                <small class="text-secondary" style="font-size: 0.65rem;">${timeStr}</small>
+                            </div>
+                        </div>
+                        <div class="text-success fw-bold">฿${bid.amount.toLocaleString()}</div>
+                    </div>
+                `;
                 historyList.innerHTML += html;
             });
         }
     });
+
     new bootstrap.Modal(document.getElementById('auctionModal')).show();
 }
 document.getElementById('auctionModal').addEventListener('hidden.bs.modal', () => { if (unsubscribeProduct) unsubscribeProduct(); if (unsubscribeBids) unsubscribeBids(); currentProductEndTime = null; });
 
-// 🔥 Supabase Upload
-async function uploadImageToSupabase(file) {
-    const fileExt = file.name.split('.').pop();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const timestamp = Date.now();
-    const fileName = `${timestamp}_${randomString}.${fileExt}`;
-    const { data, error } = await supabase.storage.from('product-images').upload(fileName, file);
-    if (error) throw new Error("อัปโหลดรูปไม่สำเร็จ: " + error.message);
-    const { data: publicData } = supabase.storage.from('product-images').getPublicUrl(fileName);
-    return publicData.publicUrl;
-}
 
 // ==========================================
-// G. Add Item & Edit Item (Updated Validation 🔥)
+// G. Add & Edit Item (ใช้ Service)
 // ==========================================
 
 const addForm = document.getElementById('addItemForm');
@@ -400,72 +566,86 @@ if(addForm) {
         if(checkBan()) return;
         
         const title = document.getElementById('inpTitle').value;
-        const desc = document.getElementById('inpDesc').value;
-        
-        // 🔥 Logic ใหม่: รับค่าราคาที่อาจเป็นว่างได้
         const priceVal = document.getElementById('inpPrice').value;
         const buyNowVal = document.getElementById('inpBuyNowPrice').value;
+        const bidIncrementVal = document.getElementById('inpBidIncrement').value;
+        const bidIncrement = bidIncrementVal ? Number(bidIncrementVal) : 20;
         
-        // แปลงเป็นตัวเลข หรือ null
         const price = priceVal !== "" ? Number(priceVal) : null;
         const buyNowPrice = buyNowVal !== "" ? Number(buyNowVal) : null;
         
-        // 🔥 Validation: ต้องมีอย่างน้อย 1 ราคา
         if (price === null && buyNowPrice === null) {
-            return alert("กรุณาระบุ 'ราคาเริ่มต้น' หรือ 'ราคาขายสด' อย่างน้อย 1 อย่าง");
+            return Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: 'กรุณาระบุ ราคาเริ่มต้น หรือ ราคาขายสด อย่างน้อย 1 อย่าง',
+                        confirmButtonColor: '#ff6b6b'
+                    });
         }
 
         const email = document.getElementById('inpEmail').value.trim();
         const fileInput = document.getElementById('inpFile');
         const endTimeInput = document.getElementById('inpEndTime').value;
         
-        // 🔥 Default Category: 'other'
-        let category = document.getElementById('inpCategory').value;
-        if (!category || category === "") category = "other";
-        
-        if (!email) return alert("กรุณาระบุอีเมลสำหรับติดต่อ");
-        if (!endTimeInput) return alert("ระบุเวลาปิดประมูล");
-        if (fileInput.files.length === 0) return alert("กรุณาเลือกรูปภาพสินค้า");
-
+        if (!email || !endTimeInput || fileInput.files.length === 0) 
+            return Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: 'กรอกข้อมูลให้ครบ',
+                        confirmButtonColor: '#ff6b6b'
+                    });
         const endTimeMs = new Date(endTimeInput).getTime();
-        const nowMs = new Date().getTime();
-
-        if (endTimeMs <= nowMs) {
-            return alert("❌ เวลาปิดประมูลต้องเป็นเวลาในอนาคตเท่านั้น");
-        }
-        const myName = document.getElementById('navUsername') ? document.getElementById('navUsername').innerText : "User";
+        if (endTimeMs <= new Date().getTime()) 
+            return Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: '❌ เวลาปิดประมูลต้องเป็นอนาคต',
+                        confirmButtonColor: '#ff6b6b'
+                    });
 
         try {
             toggleLoading(true);
             const file = fileInput.files[0];
-            const imageUrl = await uploadImageToSupabase(file);
+            
+            // 🔥 เรียก Service: Upload
+            const imageUrl = await StorageService.uploadImage(file);
 
-            await addDoc(collection(db, "auctions"), {
+            // 🔥 เรียก Service: Create Auction
+            await AuctionService.createAuction({
                 title: title, 
-                category: category, 
-                description: desc, 
-                current_price: price, // เป็น null ได้ถ้าไม่กรอก
-                buy_now_price: buyNowPrice, // เป็น null ได้ถ้าไม่กรอก
+                category: document.getElementById('inpCategory').value || "other", 
+                description: document.getElementById('inpDesc').value, 
+                current_price: price, 
+                buy_now_price: buyNowPrice,
+                bid_increment: bidIncrement,
                 contact_email: email,
                 image_url: imageUrl, 
                 status: 'active', 
                 seller_uid: currentUser ? currentUser.uid : "guest", 
-                seller_name: myName,
-                end_time_ms: endTimeMs, 
-                created_at: new Date()
+                seller_name: document.getElementById('navUsername').innerText,
+                end_time_ms: endTimeMs
             });
             
             toggleLoading(false); 
-            alert("ลงสินค้าเรียบร้อย!"); 
+            Swal.fire({
+                icon: 'success',
+                title: 'สำเร็จ!',
+                text: 'ลงสินค้าเรียบร้อย',
+                confirmButtonColor: '#1dd1a1'
+            }); 
             location.reload(); 
         } catch (error) { 
             toggleLoading(false); 
-            alert("Error: " + error.message); 
+            Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาด',
+                text: error.message,
+                confirmButtonColor: '#ff6b6b'
+            });("Error: " + error.message); 
         }
     });
 }
 
-// 2. แก้ไขสินค้า
 const editForm = document.getElementById('editItemForm');
 if(editForm) {
     editForm.addEventListener('submit', async (e) => {
@@ -473,47 +653,63 @@ if(editForm) {
         
         const endTimeInput = document.getElementById('editEndTime').value;
         const endTimeMs = new Date(endTimeInput).getTime();
-        const nowMs = new Date().getTime();
-
-        // 🔥 Validation: เช็คเวลาตอนแก้ไขด้วย
-        if (endTimeMs <= nowMs) {
-            return alert("❌ เวลาปิดประมูลต้องเป็นเวลาในอนาคตเท่านั้น");
-        }
+        if (endTimeMs <= new Date().getTime()) 
+            return Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: '❌ เวลาปิดประมูลต้องเป็นอนาคต',
+                        confirmButtonColor: '#ff6b6b'
+                    });
         
-        // ... (Logic การบันทึก) ...
         const pid = document.getElementById('editProductId').value;
         const fileInput = document.getElementById('editFile');
         const buyNowVal = document.getElementById('editBuyNowPrice').value;
         const buyNowPrice = buyNowVal ? Number(buyNowVal) : null;
-        
+
         try {
             toggleLoading(true);
             let imageUrl = document.getElementById('currentImageUrl').value; 
             if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                imageUrl = await uploadImageToSupabase(file);
+                // 🔥 เรียก Service: Upload
+                imageUrl = await StorageService.uploadImage(fileInput.files[0]);
             }
-            await updateDoc(doc(db, "auctions", pid), {
+            // 🔥 เรียก Service: Update Auction
+            await AuctionService.updateAuction(pid, {
                 title: document.getElementById('editTitle').value, 
                 description: document.getElementById('editDesc').value,
                 category: document.getElementById('editCategory').value || "other",
-                buy_now_price: buyNowPrice, 
+                buy_now_price: buyNowPrice,
                 image_url: imageUrl, 
                 contact_email: document.getElementById('editEmail').value, 
                 end_time_ms: endTimeMs,
             });
-            toggleLoading(false); alert("แก้ไขเรียบร้อย!"); bootstrap.Modal.getInstance(document.getElementById('editItemModal')).hide(); location.reload(); 
-        } catch(e) { toggleLoading(false); alert("Error: " + e.message); }
+            toggleLoading(false); 
+                Swal.fire({
+                    icon: 'success',
+                    title: 'สำเร็จ!',
+                    text: 'แก้ไขเรียบร้อย!',
+                    confirmButtonColor: '#1dd1a1' // สีธีมเรา
+                });
+            bootstrap.Modal.getInstance(document.getElementById('editItemModal')).hide(); 
+            location.reload();
+            
+        }   catch(e) { toggleLoading(false); 
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: e.message,
+                    confirmButtonColor: '#ff6b6b'
+                });}
     });
 }
-// 2. เปิดหน้าแก้ไขสินค้า (โหลดรูปเดิมมาโชว์)
-// ประกาศให้ window เรียกใช้ได้
+
 window.openEditModal = async function() {
     if(!currentProductId) return;
     bootstrap.Modal.getInstance(document.getElementById('auctionModal')).hide();
-    
     toggleLoading(true);
-    const docSnap = await getDoc(doc(db, "auctions", currentProductId));
+    
+    // 🔥 เรียก Service: Get Single Auction
+    const docSnap = await AuctionService.getAuctionById(currentProductId);
     
     if(docSnap.exists()) {
         const data = docSnap.data();
@@ -523,20 +719,12 @@ window.openEditModal = async function() {
         document.getElementById('editCategory').value = data.category || "other"; 
         document.getElementById('editPrice').value = data.current_price; 
         document.getElementById('editBuyNowPrice').value = data.buy_now_price || "";
-        
-        // เก็บ URL รูปเดิมไว้ใน Hidden Input และแสดงตัวอย่าง
         document.getElementById('currentImageUrl').value = data.image_url;
-        // Check if element exists before setting src to avoid errors if HTML is not updated yet
-        const imgDisplay = document.getElementById('editCurrentImgDisplay'); 
-        // Create if doesn't exist (might be missing in HTML)
-        if(!imgDisplay && document.getElementById('editFile')) {
-             // Optional: Inject img display dynamically if needed
-        } else if (imgDisplay) {
-             imgDisplay.src = data.image_url;
-        }
         
-        document.getElementById('editFile').value = ""; // เคลียร์ช่องเลือกไฟล์ใหม่
-
+        const imgDisplay = document.getElementById('editCurrentImgDisplay'); 
+        if (imgDisplay) imgDisplay.src = data.image_url;
+        
+        document.getElementById('editFile').value = "";
         document.getElementById('editEmail').value = data.contact_email || "";
         if(data.end_time_ms) {
             const date = new Date(data.end_time_ms);
@@ -548,65 +736,303 @@ window.openEditModal = async function() {
         new bootstrap.Modal(document.getElementById('editItemModal')).show();
     }
 }
-// Helper function for loading (if not already present)
-// Removed duplicate toggleLoading declaration
-function toggleLoading(show) { const loader = document.getElementById('loading'); if (loader) loader.style.display = show ? 'flex' : 'none'; }
+
+// ==========================================
+// Actions: Bid & Buy Now (ใช้ Service)
+// ==========================================
+function toggleLoading(show) { 
+    const loader = document.getElementById('loading'); 
+    if (loader) loader.style.display = show ? 'flex' : 'none'; 
+}
+
 window.placeBid = async function() {
     if(checkBan()) return;
-    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อน");
-    if(currentUser && currentSellerUid === currentUser.uid) return alert("คุณประมูลสินค้าตัวเองไม่ได้!");
+    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) 
+        return Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'กรุณากู้คืนบัญชีเดิมก่อน',
+                    confirmButtonColor: '#ff6b6b'   
+                });
+    if(currentUser && currentSellerUid === currentUser.uid) 
+        return Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'คุณประมูลสินค้าตัวเองไม่ได้!',
+                    confirmButtonColor: '#ff6b6b'   
+                });
     const bidInput = document.getElementById('bidInput');
     const bidAmount = Number(bidInput.value);
-    if(!bidAmount || bidAmount <= 0) return alert("กรุณาใส่ราคา");
+    if(!bidAmount || bidAmount <= 0) 
+        return Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'กรุณาใส่ราคา',
+                    confirmButtonColor: '#ff6b6b'   
+                });
     try {
-        const productRef = doc(db, "auctions", currentProductId);
-        const productSnap = await getDoc(productRef);
+        const productSnap = await AuctionService.getAuctionById(currentProductId);
         if (productSnap.exists()) {
             const data = productSnap.data();
             const now = new Date().getTime();
-            if (data.status === 'sold') return alert("สินค้านี้ขายแล้ว!");
-            if (data.end_time_ms && now > data.end_time_ms) return alert("หมดเวลาแล้ว!");
+            if (data.status === 'sold') 
+                return Swal.fire({
+                    icon: 'error',
+                    title: 'อุ๊ปส์...',
+                    text: 'สินค้านี้ขายแล้ว!',
+                    confirmButtonColor: '#ff6b6b'   
+                });
+            if (data.end_time_ms && now > data.end_time_ms) 
+                return Swal.fire({
+                    icon: 'error',
+                    title: 'อุ๊ปส์...',
+                    text: 'หมดเวลาแล้ว!',
+                    confirmButtonColor: '#ff6b6b'   
+                });
+            
             const currentP = data.current_price || 0;
-            if (bidAmount <= currentP) return alert(`ต้องใส่ราคามากกว่า ฿${currentP.toLocaleString()}`);
+            const minIncrement = data.bid_increment || 20;
+            let minAllowedPrice = currentP + minIncrement;
+            if (currentP === 0) minAllowedPrice = data.current_price;
+
+            if (bidAmount < (currentP + minIncrement)) {
+                return Swal.fire({
+                            icon: 'error',
+                            title: 'อุ๊ปส์...',
+                            text: `ต้องเสนอราคาเพิ่มขึ้นอย่างน้อย ฿${minIncrement.toLocaleString()} (ขั้นต่ำต้องใส่ ฿${(currentP + minIncrement).toLocaleString()})`, 
+                            confirmButtonColor: '#ff6b6b'
+                        });
+            }
+            if (bidAmount <= currentP) 
+                return Swal.fire({
+                            icon: 'error',
+                            title: 'อุ๊ปส์...',
+                            text: `ต้องใส่ราคามากกว่า ฿${currentP.toLocaleString()}`,
+                            confirmButtonColor: '#ff6b6b'
+                        });
+
             const myName = document.getElementById('navUsername').innerText;
-            await addDoc(collection(db, "auctions", currentProductId, "bids"), { amount: bidAmount, bidder_uid: currentUser.uid, bidder_name: myName, timestamp: new Date() });
-            await updateDoc(productRef, { current_price: bidAmount, last_bidder_uid: currentUser.uid, updated_at: new Date() });
+            
+            // 🔥 เรียก Service: Place Bid
+            await AuctionService.placeBid(currentProductId, {
+                amount: bidAmount, 
+                bidder_uid: currentUser.uid, 
+                bidder_name: myName
+            }, data);
+
             bidInput.value = "";
         }
-    } catch (error) { alert("Error: " + error.message); }
+    } catch (error) { Swal.fire({
+                        icon: 'error',
+                        title: 'อุ๊ปส์...',
+                        text: error.message, 
+                        confirmButtonColor: '#ff6b6b'
+                    });}
 }
+
 window.buyNow = async function() {
     if(checkBan()) return;
-    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อน");
-    if(currentUser && currentSellerUid === currentUser.uid) return alert("คุณซื้อสินค้าตัวเองไม่ได้!");
-    if(!confirm("ยืนยันการซื้อสด?")) return;
+    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) 
+        return Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: "กรุณากู้คืนบัญชีเดิมก่อน", 
+                    confirmButtonColor: '#ff6b6b'
+                });
+    if(currentUser && currentSellerUid === currentUser.uid) 
+        return  Swal.fire({
+                    icon: 'error',
+                    title: 'อุ๊ปส์...',
+                    text: "คุณซื้อสินค้าตัวเองไม่ได้!", 
+                    confirmButtonColor: '#ff6b6b'
+                });
+    Swal.fire({
+        title: 'ยืนยันการซื้อสด ?',
+        text: "คุณต้องการซื้อสด ใช่หรือไม่",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#b2bec3', 
+        cancelButtonColor: '#ff6b6b',
+        confirmButtonText: 'ใช่',
+        cancelButtonText: 'ไม่'
+    });
     try {
-        const productRef = doc(db, "auctions", currentProductId);
-        const productSnap = await getDoc(productRef);
+        const productSnap = await AuctionService.getAuctionById(currentProductId);
         if (productSnap.exists()) {
             const data = productSnap.data();
-            if (data.status === 'sold') return alert("เสียใจด้วย มีคนซื้อตัดหน้าไปแล้ว!");
+            const currentP = data.current_price || 0;
+            if (data.buy_now_price && currentP >= data.buy_now_price) {
+                return Swal.fire({
+                    icon: 'error',
+                    title: 'อุ๊ปส์...',
+                    text: "ราคาประมูลปัจจุบันสูงกว่าราคาขายสดแล้ว", 
+                    confirmButtonColor: '#ff6b6b'
+                });
+            }
+            if (data.status === 'sold') 
+                return Swal.fire({
+                    icon: 'error',
+                    title: 'อุ๊ปส์...',
+                    text: "เสียใจด้วย มีคนซื้อตัดหน้าไปแล้ว!", 
+                    confirmButtonColor: '#ff6b6b'
+                });
+            
             const myName = document.getElementById('navUsername').innerText;
-            await updateDoc(productRef, { status: 'sold', buyer_uid: currentUser.uid, current_price: data.buy_now_price, end_time_ms: new Date().getTime(), updated_at: new Date() });
-            await addDoc(collection(db, "auctions", currentProductId, "bids"), { amount: data.buy_now_price, bidder_uid: currentUser.uid, bidder_name: myName + " (ซื้อสด!)", timestamp: new Date() });
-            alert("ซื้อสินค้าสำเร็จ! ยินดีด้วย 🎉");
+            
+            // 🔥 เรียก Service: Buy Now
+            await AuctionService.buyNow(currentProductId, {
+                amount: data.buy_now_price,
+                buyer_uid: currentUser.uid,
+                bidder_name: myName
+            });
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'เรียบร้อย!',
+                text: ' ซื้อสินค้าสำเร็จ! ยินดีด้วย 🎉🎉',
+                confirmButtonColor: '#1dd1a1',
+                confirmButtonText: 'ตกลง'
+            });
         }
-    } catch (error) { alert("Error: " + error.message); }
+    } catch (error) { Swal.fire({
+                            icon: 'error',
+                            title: 'อุ๊ปส์...',
+                            text: error.message,
+                            confirmButtonColor: '#ff6b6b'
+                        });}
 }
+
 window.openAddModal = function() {
     if(checkBan()) return;
-    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) return alert("กรุณากู้คืนบัญชีเดิมก่อนใช้งาน");
+    if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) 
+        return Swal.fire({
+                    icon: 'error',
+                    title: 'อุ๊ปส์...',
+                    text: 'กรุณากู้คืนบัญชีเดิมก่อนใช้งาน',
+                    confirmButtonColor: '#ff6b6b'
+                });
     document.getElementById('addItemForm').reset();
     setupProfileCheckbox('chkProfileEmail', userProfileCache.contact_email);
     if(userProfileCache.contact_email) document.getElementById('chkProfileEmail').click();
     new bootstrap.Modal(document.getElementById('addItemModal')).show();
 }
+
 function setupProfileCheckbox(chkId, dataValue) { const chk = document.getElementById(chkId); if (!dataValue) { chk.disabled = true; chk.parentElement.querySelector('label').innerText += " (ไม่มี)"; } else { chk.disabled = false; let label = chk.parentElement.querySelector('label').innerText; chk.parentElement.querySelector('label').innerText = label.replace(" (ไม่มี)", ""); } }
 window.toggleContactInput = function(chkId, inputId, dataKey) { const isChecked = document.getElementById(chkId).checked; const inputEl = document.getElementById(inputId); if (isChecked) { inputEl.value = userProfileCache[dataKey] || ""; inputEl.readOnly = true; inputEl.classList.add('bg-secondary', 'text-white'); } else { inputEl.value = ""; inputEl.readOnly = false; inputEl.classList.remove('bg-secondary', 'text-white'); } }
 window.openProfileModal = function() { if(!currentUser) return; document.getElementById('profileNameInput').value = document.getElementById('navUsername').innerText; new bootstrap.Modal(document.getElementById('profileModal')).show(); }
-window.updateUserProfile = async function() { const newName = document.getElementById('profileNameInput').value; if(newName && currentUser) { toggleLoading(true); await updateDoc(doc(db, "users", currentUser.uid), { displayName: newName, contact_email: document.getElementById('profileEmail').value }); toggleLoading(false); alert("บันทึกข้อมูลเรียบร้อย"); bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide(); } }
-window.linkAccount = async function() { const email = document.getElementById('linkEmail').value.trim(); const password = document.getElementById('linkPassword').value; if(!email || password.length < 6) return alert("กรอกอีเมลและรหัสผ่าน (6 ตัวขึ้นไป)"); try { toggleLoading(true); const credential = EmailAuthProvider.credential(email, password); await linkWithCredential(currentUser, credential); await updateDoc(doc(db, "users", currentUser.uid), { contact_email: email }); toggleLoading(false); alert("✅ ผูกบัญชีสำเร็จ!"); document.getElementById('linkAccountSection').innerHTML = `<div class="text-success text-center py-2"><i class="bi bi-check-circle-fill"></i> บัญชีนี้ผูกกับอีเมลแล้ว</div>`; } catch (error) { toggleLoading(false); alert("Error: " + error.message); } }
-window.copySecret = function() { const copyText = document.getElementById("profileSecretCode"); copyText.select(); navigator.clipboard.writeText(copyText.value); alert("คัดลอกรหัสลับแล้ว"); }
-window.openRecoverModal = function() { new bootstrap.Modal(document.getElementById('recoverModal')).show(); }
-window.recoverAccount = async function() { const secretCode = document.getElementById('recoverSecretCode').value.trim(); if(!secretCode) return alert("กรุณากรอกรหัสลับ"); try { toggleLoading(true); const qUser = query(collection(db, "users"), where("secret_code", "==", secretCode)); const querySnapshot = await getDocs(qUser); if(querySnapshot.empty) { toggleLoading(false); return alert("รหัสลับไม่ถูกต้อง หรือไม่พบข้อมูล"); } const oldUserDoc = querySnapshot.docs[0]; const oldUserData = oldUserDoc.data(); if(oldUserDoc.id === currentUser.uid) { toggleLoading(false); return alert("คุณกำลังใช้บัญชีนี้อยู่แล้ว"); } await updateDoc(doc(db, "users", currentUser.uid), { displayName: oldUserData.displayName, migrated_from: oldUserDoc.id }); const qProduct = query(collection(db, "auctions"), where("seller_uid", "==", oldUserDoc.id)); const productSnaps = await getDocs(qProduct); const batch1 = writeBatch(db); productSnaps.forEach((docSnap) => { batch1.update(docSnap.ref, { seller_uid: currentUser.uid }); }); await batch1.commit(); const qBids = query(collection(db, "auctions"), where("last_bidder_uid", "==", oldUserDoc.id)); const bidSnaps = await getDocs(qBids); const batch2 = writeBatch(db); bidSnaps.forEach((docSnap) => { batch2.update(docSnap.ref, { last_bidder_uid: currentUser.uid }); }); await batch2.commit(); const qWins = query(collection(db, "auctions"), where("buyer_uid", "==", oldUserDoc.id)); const winSnaps = await getDocs(qWins); const batch3 = writeBatch(db); winSnaps.forEach((docSnap) => { batch3.update(docSnap.ref, { buyer_uid: currentUser.uid }); }); await batch3.commit(); await updateDoc(oldUserDoc.ref, { displayName: oldUserData.displayName + "_old", is_migrated: true }); toggleLoading(false); alert(`ย้ายสำเร็จ! ยินดีต้อนรับ ${oldUserData.displayName}`); location.reload(); } catch (error) { toggleLoading(false); alert("Error: " + error.message); } }
-function checkBan() { if(isBanned) { alert("คุณถูกระงับการใช้งาน"); return true; } return false; }
+
+window.updateUserProfile = async function() { 
+    const newName = document.getElementById('profileNameInput').value; 
+    if(newName && currentUser) { 
+        toggleLoading(true); 
+        // 🔥 เรียก Service
+        await UserService.updateProfile(currentUser.uid, { 
+            displayName: newName, 
+            contact_email: document.getElementById('profileEmail').value 
+        }); 
+        toggleLoading(false); 
+        Swal.fire({
+            icon: 'success',
+            title: 'เรียบร้อย!',
+            text: 'บันทึกข้อมูลเรียบร้อย🎉',
+            confirmButtonColor: '#1dd1a1', // สีเขียวมิ้นต์ตามธีมเว็บคุณ
+            confirmButtonText: 'ตกลง'
+        });
+        bootstrap.Modal.getInstance(document.getElementById('profileModal')).hide(); 
+    } 
+}
+
+window.linkAccount = async function() { 
+    const email = document.getElementById('linkEmail').value.trim(); 
+    const password = document.getElementById('linkPassword').value; 
+    if(!email || password.length < 6) 
+        return Swal.fire({
+                    icon: 'error',
+                    title: 'อุ๊ปส์...',
+                    text: 'กรอกอีเมลและรหัสผ่าน (6 ตัวขึ้นไป)',
+                    confirmButtonColor: '#ff6b6b'
+                }); 
+    try { 
+        toggleLoading(true); 
+        // 🔥 เรียก Service
+        await AuthService.linkEmailAccount(currentUser, email, password);
+        const currentName = document.getElementById('navUsername').innerText; // ดึงชื่อปัจจุบันมาด้วย
+
+        await UserService.updateProfile(currentUser.uid, { 
+            displayName: currentName, // <--- ต้องส่งอันนี้ไปด้วย เพราะ Backend บังคับ
+            contact_email: email 
+        });
+        toggleLoading(false); 
+        Swal.fire({
+            icon: 'success',
+            title: 'เรียบร้อย ✅',
+            text: 'ผูกบัญชีสำเร็จ! 🎉',
+            confirmButtonColor: '#1dd1a1', // สีเขียวมิ้นต์ตามธีมเว็บคุณ
+            confirmButtonText: 'ตกลง'
+        });(" "); document.getElementById('linkAccountSection').innerHTML = `<div class="text-success text-center py-2"><i class="bi bi-check-circle-fill"></i> บัญชีนี้ผูกกับอีเมลแล้ว</div>`; 
+    } catch (error) { toggleLoading(false); 
+        Swal.fire({
+            icon: 'error',
+            title: 'อุ๊ปส์...',
+            text: error.message,
+            confirmButtonColor: '#ff6b6b'
+        });} 
+}
+
+window.copySecret = function() { 
+    const copyText = document.getElementById("profileSecretCode"); 
+    copyText.select(); 
+    navigator.clipboard.writeText(copyText.value); 
+    Swal.fire({
+            icon: 'success',
+            title: 'เรียบร้อย!',
+            text: 'คัดลอกรหัสลับแล้ว',
+            confirmButtonColor: '#1dd1a1', 
+            confirmButtonText: 'ตกลง'
+        });
+}
+window.openRecoverModal = function() {
+     new bootstrap.Modal(document.getElementById('recoverModal')).show();
+    }
+
+window.recoverAccount = async function() { 
+    const secretCode = document.getElementById('recoverSecretCode').value.trim(); 
+    if(!secretCode) 
+        return  Swal.fire({
+                    icon: 'error',
+                    title: 'อุ๊ปส์...',
+                    text: 'กรุณากรอกรหัสลับ', 
+                    confirmButtonColor: '#ff6b6b'
+                }); 
+    try { 
+        toggleLoading(true); 
+        // 🔥 เรียก Service (รวม logic ย้ายข้อมูลไว้ใน api.js แล้ว)
+        const oldName = await UserService.recoverAccount(currentUser, secretCode);
+        toggleLoading(false); 
+        Swal.fire({
+            icon: 'success',
+            title: 'ย้ายสำเร็จ!',
+            text: `ยินดีต้อนรับ ${oldName}🎉`,
+            confirmButtonColor: '#1dd1a1',
+            confirmButtonText: 'ตกลง'
+        }); location.reload();
+
+    } catch (error) { toggleLoading(false); 
+        Swal.fire({
+            icon: 'error',
+            title: 'อุ๊ปส์...',
+            text: error.message,
+            confirmButtonColor: '#ff6b6b'
+        }); } 
+}
+
+function checkBan() { 
+    if(isBanned) { 
+        Swal.fire({
+            icon: 'error',
+            title: 'อุ๊ปส์...',
+            text: 'คุณถูกระงับการใช้งาน',
+            confirmButtonColor: '#ff6b6b'
+        }); 
+        return true; } 
+        return false; }
