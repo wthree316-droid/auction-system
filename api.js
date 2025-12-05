@@ -8,8 +8,8 @@ import {
 // ==========================================
 // 🔧 CONFIGURATION
 // ==========================================
-const API_BASE_URL = "http://localhost:8000"; // URL ของ Python Backend
-const WS_URL = "ws://localhost:8000/ws";     // WebSocket URL
+const API_BASE_URL = "http://auction-backend.zeabur.app";
+const WS_URL = "ws://auction-backend.zeabur.app/ws";     
 
 // ==========================================
 // 🔌 WebSocket Manager (Real-time Engine)
