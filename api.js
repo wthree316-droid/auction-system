@@ -9,7 +9,7 @@ import {
 // 🔧 CONFIGURATION
 // ==========================================
 const API_BASE_URL = "http://https://auction-backend-1089558422014.asia-southeast1.run.app"; 
-const WS_URL = "ws:https://auction-backend-1089558422014.asia-southeast1.run.app/ws";    
+const WS_URL = "wss:https://auction-backend-1089558422014.asia-southeast1.run.app/ws";    
 // ==========================================
 // 🔌 WebSocket Manager (Real-time Engine)
 // ==========================================
