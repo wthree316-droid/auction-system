@@ -8,8 +8,8 @@ import {
 // ==========================================
 // 🔧 CONFIGURATION
 // ==========================================
-const API_BASE_URL = "http://http://127.0.0.1:8000";
-const WS_URL = "wss://http://127.0.0.1:8000/ws";
+const API_BASE_URL = "http://auction-backend.zeabur.app:8080";
+const WS_URL = "wss://http://auction-backend.zeabur.app:8080/ws";
 
 // ==========================================
 // 🔌 WebSocket Manager (Real-time Engine)
