@@ -1059,7 +1059,6 @@ window.shareAuction = function() {
     if (!currentProductId) return;
 
     // สร้างลิ้งค์พิเศษ (ชี้ไปที่ Python Backend)
-    // สมมติ Backend รันอยู่ที่ https://my-api.run.app
     const backendUrl = "https://auction-backend-1089558422014.asia-southeast1.run.app"; // 🔴 ใส่ URL Backend จริง
     const shareUrl = `${backendUrl}/share/${currentProductId}`;
 
