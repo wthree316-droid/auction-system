@@ -1,5 +1,5 @@
-import { auth } from "./firebase-config.js";
-import { supabase } from "./supabase-client.js";
+import { auth } from "./firebase-config.js"; // ใช้ Auth ของ Firebase จัดการ Login State ฝั่งหน้าบ้าน
+import { supabase } from "./supabase-client.js"; // ใช้ Supabase Upload รูปเหมือนเดิม
 import { 
     signInAnonymously, onAuthStateChanged, signOut, 
     EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword 
@@ -10,8 +10,6 @@ import {
 // ==========================================
 const API_BASE_URL = "https://auction-backend-1089558422014.asia-southeast1.run.app"; 
 const WS_URL = "wss://auction-backend-1089558422014.asia-southeast1.run.app/ws";     
-
-
 // ==========================================
 // 🔌 WebSocket Manager (Real-time Engine)
 // ==========================================
