@@ -1,5 +1,5 @@
-import { auth } from "./firebase-config.js";
-import { supabase } from "./supabase-client.js";
+import { auth } from "./firebase-config.js"; 
+import { supabase } from "./supabase-client.js"; 
 import { 
     signInAnonymously, onAuthStateChanged, signOut, 
     EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword 
@@ -8,8 +8,10 @@ import {
 // ==========================================
 // 🔧 CONFIGURATION
 // ==========================================
-const API_BASE_URL = "https://auction-backend-1089558422014.asia-southeast1.run.app"; 
-const WS_URL = "wss://auction-backend-1089558422014.asia-southeast1.run.app/ws";    
+const API_BASE_URL = "http://auction-backend-1089558422014.asia-southeast1.run.app"; 
+const WS_URL = "wss://auction-backend-1089558422014.asia-southeast1.run.app/ws";     
+
+
 // ==========================================
 // 🔌 WebSocket Manager (Real-time Engine)
 // ==========================================
@@ -218,7 +220,7 @@ async recoverAccount(currentUser, secretCode) { // 1. เปลี่ยนช�
         // 🛡️ Safe Check: รองรับทั้งแบบส่ง User Object มา หรือส่ง UID มาตรงๆ
         const uid = currentUser.uid ? currentUser.uid : currentUser;
         
-        // 2. ค่า secretCodeInput ที่ส่งมาเป็น String อยู่แล้ว ใช้ได้เลย (ไม่ต้องเช็ค .uid)
+        // 2. ค่า secretCode ที่ส่งมาเป็น String อยู่แล้ว ใช้ได้เลย (ไม่ต้องเช็ค .uid)
         const code = secretCode; 
 
         console.log("🚀 Sending Recovery:", { current_uid: uid, secret_code: code });
