@@ -6,14 +6,16 @@
     <title>Auction X - ประมูลสินค้าออนไลน์ อันดับ 1</title>
     
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://auction-system-delta.vercel.app/"> <meta property="og:title" content="Auction X - ประมูลสินค้าออนไลน์ อันดับ 1">
+    <meta property="og:url" content="https://auction-system-delta.vercel.app/"> 
+    <meta property="og:title" content="Auction X - ประมูลสินค้าออนไลน์ อันดับ 1">
     <meta property="og:description" content="แหล่งรวมสินค้าประมูล ไอที แฟชั่น พระเครื่อง เริ่มต้น 0 บาท">
-    <meta property="og:image" content="https://auction-system-delta.vercel.app/og-default.jpg"> <meta property="twitter:card" content="summary_large_image">
+    <meta property="og:image" content="https://auction-system-delta.vercel.app/og-default.jpg"> 
+    
+    <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://auction-system-delta.vercel.app/">
     <meta property="twitter:title" content="Auction X - ประมูลสินค้าออนไลน์ อันดับ 1">
     <meta property="twitter:description" content="แหล่งรวมสินค้าประมูล ไอที แฟชั่น พระเครื่อง เริ่มต้น 0 บาท">
     <meta property="twitter:image" content="https://auction-system-delta.vercel.app/og-default.jpg">
-    
     
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Kanit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -21,22 +23,18 @@
     
     <style>
         :root {
-            /* 🎨 Unified Theme: Pastel Pop */
             --primary-color: #ff6b6b;
             --secondary-color: #1dd1a1;
             --accent-color: #feca57;
             --text-color: #2d3436;
             --bg-color: #f8f9fa;
             --card-bg: #ffffff;
-            
-            /* Soft Shadows (แก้ไขจาก Neumorphism เป็น Soft Material) */
             --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
             --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.1);
         }
 
         body { 
             background-color: var(--bg-color); 
-            /* Gradient เดียวกับไฟล์อื่น */
             background-image: 
                 radial-gradient(at 0% 0%, rgba(255, 107, 107, 0.05) 0px, transparent 50%),
                 radial-gradient(at 100% 100%, rgba(29, 209, 161, 0.05) 0px, transparent 50%);
@@ -56,7 +54,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
         }
 
-        /* Inputs (ปรับให้ขาวสะอาด ไม่จม) */
+        /* Inputs */
         .input-group-custom {
             border-radius: 50px;
             padding: 4px;
@@ -129,7 +127,7 @@
         .product-img-wrapper { 
             position: relative; overflow: hidden; padding-top: 100%; 
             border-radius: 15px; margin: 12px 12px 0 12px;
-            background-color: #f8f9fa; /* พื้นหลังรูปสีอ่อนแทนดำ */
+            background-color: #f8f9fa; 
         }
         .product-img-list { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; 
@@ -153,14 +151,12 @@
             border: 3px solid white;
         }
 
-        /* Modals (Clean White Theme) */
+        /* Modals */
         .modal-content { 
             background-color: #fff; border: none; border-radius: 30px; 
             overflow: hidden; box-shadow: var(--shadow-hover);
         }
-        /* แก้ไข Modal Image Column ให้ไม่ดำ */
         .modal-image-col { background-color: #f1f2f6 !important; background-image: none !important; }
-        /* แก้ไข Modal Info Column ให้ขาว */
         .modal-info-col { background-color: #ffffff !important; border-left: none !important; }
         
         .btn-close-modal {
@@ -321,11 +317,19 @@
 
     <div class="modal fade" id="auctionModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content overflow-hidden border-0 shadow-lg h-100">
-                <button class="btn btn-outline-primary btn-sm rounded-pill" onclick="shareAuction()">
-                    <i class="bi bi-share-fill"></i> แชร์
+            <div class="modal-content overflow-hidden border-0 shadow-lg h-100 position-relative">
+                
+                <button class="btn btn-light text-primary rounded-circle shadow-sm position-absolute" 
+                        style="top: 20px; right: 70px; z-index: 100; width: 40px; height: 40px;" 
+                        onclick="shareAuction()" 
+                        title="แชร์สินค้า">
+                    <i class="bi bi-share-fill"></i>
                 </button>
-                <button type="button" class="btn-close-modal shadow-sm" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
+
+                <button type="button" class="btn-close-modal shadow-sm" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+
                 <div class="modal-body p-0 h-100">
                     <div class="row g-0 h-100">
                         <div class="col-lg-7 d-flex align-items-center justify-content-center position-relative modal-image-col">
@@ -488,9 +492,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <script type="module" src="app.js"></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // ป้องกันเลือกวันในอดีต
             const dateInputs = document.querySelectorAll('input[type="datetime-local"]');
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); 
@@ -505,6 +512,8 @@
                 });
             });
         });
+
+        
     </script>
 </body>
 </html>
