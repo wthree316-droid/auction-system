@@ -61,30 +61,59 @@ const wsManager = new WebSocketManager();
 async function apiCall(endpoint, method = "GET", body = null) {
     const headers = { "Content-Type": "application/json" };
     
-    // ถ้า Login แล้ว ให้ส่ง Token ไปยืนยันตัวตนที่ Python ด้วย (Optional สำหรับเฟสแรก)
+    // 1. เช็คว่ามี User Login ไหม และแปะ Token ไปด้วย
     if (auth.currentUser) {
-        const token = await auth.currentUser.getIdToken();
-        headers["Authorization"] = `Bearer ${token}`;
+        try {
+            const token = await auth.currentUser.getIdToken();
+            headers["Authorization"] = `Bearer ${token}`;
+            // console.log("🔑 Attached Token:", token.substring(0, 10) + "..."); // อยากเช็ค Token ให้เปิดบรรทัดนี้
+        } catch (err) {
+            console.error("⚠️ Get Token Error:", err);
+        }
     }
 
     const config = { method, headers };
     if (body) config.body = JSON.stringify(body);
 
+    // 2. ปริ้นท์ Log ก่อนยิง (ช่วยเช็คว่า URL ถูกไหม)
+    console.log(`🚀 API Request: [${method}] ${API_BASE_URL}${endpoint}`, body);
+
     try {
         const res = await fetch(`${API_BASE_URL}${endpoint}`, config);
+        
+        // 3. ถ้า Backend ตอบ 404 (ไม่เจอ API)
         if (res.status === 404) {
-
+            console.error("❌ API Not Found (404)");
             throw new Error("404 Not Found");
         }    
+
+        // 4. ถ้า Backend ตอบ Error อื่นๆ (เช่น 400, 422, 500)
         if (!res.ok) {
             const errData = await res.json();
-            const errorMsg = JSON.stringify(errData.detail) || `API Error: ${res.status}`;
-            console.error(`❌ API Failed (${endpoint}):`, errorMsg);
+            console.error("❌ API Response Error:", errData); // ดู Error เต็มๆ จาก Python
+            
+            // พยายามดึงข้อความ Error ออกมาโชว์
+            const errorMsg = errData.detail ? 
+                (typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail)) 
+                : `API Error: ${res.status}`;
+            
             throw new Error(errorMsg);
         }
-        return await res.json();
+
+        // 5. สำเร็จ!
+        const result = await res.json();
+        console.log("✅ API Success:", result);
+        return result;
+
     } catch (error) {
+        // 6. ดักจับ Error ที่เกิดจาก Network (เช่น ต่อ Server ไม่ได้, CORS, URL ผิด)
+        if (error.message === "Failed to fetch") {
+            console.error("🔥 Network Error: เชื่อมต่อ Server ไม่ได้ (เช็ค URL หรือ เปิด Server หรือยัง?)");
+            throw new Error("ไม่สามารถเชื่อมต่อ Server ได้ กรุณาตรวจสอบอินเทอร์เน็ต");
+        }
+        
         if (error.message !== "404 Not Found") {
+            console.error("💥 Unknown API Error:", error);
         }
         throw error;
     }
