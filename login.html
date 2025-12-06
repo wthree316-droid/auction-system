@@ -148,7 +148,7 @@
                 
                 console.error("Login Error:", error);
 
-                // ✅ ใช้ SweetAlert2 แจ้งเตือนสวยๆ
+
                 let msg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
                 if(error.code === 'auth/user-not-found') msg = "ไม่พบผู้ใช้งานนี้";
                 if(error.code === 'auth/wrong-password') msg = "รหัสผ่านผิด";
