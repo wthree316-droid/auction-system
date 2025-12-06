@@ -1,5 +1,6 @@
 import { AuthService, UserService, AuctionService, StorageService } from "./api.js";
 
+// Variables (คงเดิม)
 let currentUser = null;
 let currentIp = "Unknown";
 let isBanned = false;
@@ -13,7 +14,7 @@ let unsubscribeBids = null;
 let currentSellerUid = null;
 
 // ==========================================
-//         A. ระบบค้นหา & กรอง
+// A. ระบบค้นหา & กรอง (UI Logic คงเดิม ไม่ต้องแก้)
 // ==========================================
 const searchInput = document.getElementById('searchInput');
 const filterCategory = document.getElementById('filterCategory');
@@ -1033,3 +1034,49 @@ function checkBan() {
         return true; } 
         return false; }
 
+// ✅ เช็ค URL ว่ามีการส่งรหัสสินค้ามาไหม ถ้ามีให้เปิด Modal ทันที
+document.addEventListener("DOMContentLoaded", async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedItemId = urlParams.get('item_id');
+
+    if (sharedItemId) {
+        // รอสักนิดให้ระบบโหลดพื้นฐานเสร็จ
+        setTimeout(async () => {
+            const docSnap = await AuctionService.getAuctionById(sharedItemId);
+            if (docSnap.exists()) {
+                const item = docSnap.data();
+                const price = item.current_price || item.buy_now_price || 0;
+                // เปิด Modal สินค้า
+                openAuction(sharedItemId, item.title, price, item.image_url, item.description);
+            }
+        }, 1000);
+    }
+});        
+
+
+// ฟังก์ชันสำหรับกดปุ่ม "แชร์" ใน Modal สินค้า
+window.shareAuction = function() {
+    if (!currentProductId) return;
+
+    // สร้างลิ้งค์พิเศษ (ชี้ไปที่ Python Backend)
+    // สมมติ Backend รันอยู่ที่ https://my-api.run.app
+    const backendUrl = "https://auction-backend-1089558422014.asia-southeast1.run.app"; // 🔴 ใส่ URL Backend จริง
+    const shareUrl = `${backendUrl}/share/${currentProductId}`;
+
+    // Copy ลง Clipboard
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        Swal.fire({
+            icon: 'success',
+            title: 'คัดลอกลิ้งค์แล้ว!',
+            text: 'นำไปวางใน Facebook/Line ได้เลย✨',
+            confirmButtonColor: '#1dd1a1'
+        });
+    }).catch(err => {
+        // กรณี Browser ไม่รองรับการ Copy อัตโนมัติ ให้แสดง URL ให้คนกด copy เอง
+        Swal.fire({
+            title: 'คัดลอกลิ้งค์ด้านล่าง',
+            html: `<input type="text" value="${shareUrl}" class="form-control text-center" readonly>`,
+            confirmButtonColor: '#ff6b6b'
+        });
+    });
+}
