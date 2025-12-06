@@ -1,5 +1,5 @@
-import { auth } from "./firebase-config.js"; 
-import { supabase } from "./supabase-client.js"; 
+import { auth } from "./firebase-config.js";
+import { supabase } from "./supabase-client.js";
 import { 
     signInAnonymously, onAuthStateChanged, signOut, 
     EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword 
@@ -8,7 +8,7 @@ import {
 // ==========================================
 // 🔧 CONFIGURATION
 // ==========================================
-const API_BASE_URL = "http://auction-backend-1089558422014.asia-southeast1.run.app"; 
+const API_BASE_URL = "https://auction-backend-1089558422014.asia-southeast1.run.app"; 
 const WS_URL = "wss://auction-backend-1089558422014.asia-southeast1.run.app/ws";     
 
 
