@@ -1,9 +1,13 @@
-import { auth } from "./firebase-config.js"; // ใช้ Auth ของ Firebase จัดการ Login State ฝั่งหน้าบ้าน
 import { supabase } from "./supabase-client.js"; // ใช้ Supabase Upload รูปเหมือนเดิม
 import { 
-    signInAnonymously, onAuthStateChanged, signOut, 
-    EmailAuthProvider, linkWithCredential, signInWithEmailAndPassword 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    auth, 
+    signInAnonymously, 
+    onAuthStateChanged, 
+    signOut, 
+    EmailAuthProvider, 
+    linkWithCredential, 
+    signInWithEmailAndPassword 
+} from "./firebase-config.js";
 
 // ==========================================
 // 🔧 CONFIGURATION
