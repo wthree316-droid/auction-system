@@ -26,7 +26,7 @@ export const AuthService = {
                 await supabase.auth.signOut();
                 localStorage.clear(); // ล้างให้เกลี้ยง
                 
-                // แล้วไปเข้าข้อ 2 เพื่อสร้างใหม่
+                // ไม่ต้อง return... ปล่อยให้มันไหลลงไปข้างล่างเพื่อสร้าง Guest ใหม่
             } else {
                 // ถ้า Server บอกโอเค -> ใช้คนเดิมได้
                 return data.session.user;
@@ -40,7 +40,13 @@ export const AuthService = {
         if (newError) throw newError;
         return newData.user;
     },
-
+    
+    // ... (ฟังก์ชันอื่น loginWithEmail, linkEmailAccount ฯลฯ อย่าลืมใส่มาด้วยนะครับ) ...
+    async loginWithEmail(email, password) {
+        // ...
+    },
+    // ...
+    
     async loginWithEmail(email, password) {
         console.log("🔑 Attempting Login:", email); // เช็คว่าอีเมลถูกไหม
 
