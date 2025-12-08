@@ -11,7 +11,7 @@ let currentProductId = null;
 let currentProductEndTime = null; 
 let unsubscribeProduct = null;
 let unsubscribeBids = null;
-let currentSellerUid = null;
+let currentSellerId = null;
 
 // ==========================================
 // A. ระบบค้นหา & กรอง (UI Logic คงเดิม ไม่ต้องแก้)
@@ -36,7 +36,7 @@ function applyFilters() {
     if (sortBy === 'newest') result.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
     else if (sortBy === 'ending_soon') {
         const now = new Date().getTime();
-        result.sort((a, b) => (a.end_time_ms - now) - (b.end_time_ms - now));
+        result.sort((a, b) => (a.end_time - now) - (b.end_time - now));
     } else if (sortBy === 'price_asc') {
         result.sort((a, b) => (a.current_price || a.buy_now_price || 0) - (b.current_price || b.buy_now_price || 0));
     } else if (sortBy === 'price_desc') {
@@ -61,12 +61,14 @@ function renderProducts(products) {
         return;
     }
 
+    // สร้างตัวแปรเก็บ HTML ก้อนใหญ่ไว้นอก Loop
+    let allCardsHtml = ""; 
+
     products.forEach(item => {
-        const safeTitle = item.title.replace(/'/g, "\\'");
-        const safeDesc = (item.description || "").replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' '); 
+        // 1. ตัวแปรที่ไม่ได้ใช้ (safeTitle, safeDesc) ลบทิ้งได้เลยครับ เพราะ onclick เราส่งแค่ ID แล้ว
         
         const timerId = `timer-${item.id}`;
-        const endTime = item.end_time_ms || 0;
+        const endTime = item.end_time ? new Date(item.end_time).getTime() : 0;
         
         let soldOverlay = item.status === 'sold' ? `<div class="sold-overlay"><div class="sold-text">SOLD</div></div>` : "";
         
@@ -74,49 +76,56 @@ function renderProducts(products) {
         const catName = catMap[item.category] || 'อื่นๆ';
         const sellerName = item.seller_name || "ผู้ขาย";
 
-        // Logic แสดงราคา
+        // --- Logic แสดงราคา (ปลอดภัยแล้ว) ---
         let priceDisplayHtml = "";
         const currentPrice = item.current_price || 0;
         const buyNowPrice = item.buy_now_price || 0;
-        
+
+        const safeCurrentPrice = (item.current_price ?? 0).toLocaleString();
+        const safeBuyNowPrice = (item.buy_now_price ?? 0).toLocaleString();
+
         if (buyNowPrice > 0 && currentPrice >= buyNowPrice) {
-             priceDisplayHtml = `<p class="card-text text-danger fw-bold mb-2 h5">฿${currentPrice.toLocaleString()} (เกินราคาซื้อสด)</p>`;
-        } else if (item.current_price) {
-            priceDisplayHtml = `<p class="card-text text-danger fw-bold mb-2 h5">฿${item.current_price.toLocaleString()}</p>`;
+            priceDisplayHtml = `<p class="card-text text-danger fw-bold mb-2 h5">฿${safeCurrentPrice} (เกินราคาซื้อสด)</p>`;
+        } else if (item.current_price !== null && item.current_price !== undefined) {
+            priceDisplayHtml = `<p class="card-text text-danger fw-bold mb-2 h5">฿${safeCurrentPrice}</p>`;
         } else if (item.buy_now_price) {
-            priceDisplayHtml = `<p class="card-text text-success fw-bold mb-2 h5">สด ฿${item.buy_now_price.toLocaleString()}</p>`;
+            priceDisplayHtml = `<p class="card-text text-success fw-bold mb-2 h5">สด ฿${safeBuyNowPrice}</p>`;
         } else {
-            priceDisplayHtml = `<p class="card-text text-muted mb-2 small">ไม่ระบุ</p>`;
+            priceDisplayHtml = `<p class="card-text text-muted mb-2 small">รอราคาเปิด</p>`;
         }
 
-        const safePrice = item.current_price !== null ? item.current_price : 0;
+        // ป้องกันชื่อสินค้าทำ HTML พังใน attribute alt
+        const safeTitleForAlt = item.title.replace(/"/g, '&quot;'); 
 
-        const html = `
+        // ต่อ String ใส่ตัวแปรแทนการยัดเข้า DOM ทันที
+        allCardsHtml += `
             <div class="col-6 col-md-4 col-lg-3">
-                <div class="card h-100 cursor-pointer position-relative card-custom" onclick="openAuction('${item.id}', '${safeTitle}', '${safePrice}', '${item.image_url}', '${safeDesc}')" style="cursor: pointer;">
+                <div class="card h-100 cursor-pointer position-relative card-custom" onclick="openAuction('${item.id}')">
                     ${soldOverlay}
                     <div class="product-img-wrapper"> 
-                        <img src="${item.image_url}" class="product-img-list" alt="${item.title}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+                        <img src="${item.image_url}" class="product-img-list" alt="${safeTitleForAlt}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                         <div class="position-absolute top-0 start-0 p-2">
                             <span class="badge bg-light text-dark shadow-sm opacity-75">${catName}</span>
                         </div>
                     </div>
                     <div class="card-body p-3">
-                         <h6 class="card-title text-truncate fw-bold mb-1">${item.title}</h6>
-                         ${priceDisplayHtml}
-                         <div class="d-flex justify-content-between align-items-center mt-2">
+                        <h6 class="card-title text-truncate fw-bold mb-1">${item.title}</h6>
+                        ${priceDisplayHtml}
+                        <div class="d-flex justify-content-between align-items-center mt-2">
                             <small class="text-secondary text-truncate" style="max-width: 80px;"><i class="bi bi-person"></i> ${sellerName}</small>
                             <div class="text-warning small fw-bold">
                                 <i class="bi bi-clock"></i> 
                                 <span id="${timerId}" class="card-timer" data-end-time="${endTime}">--:--</span>
                             </div>
-                         </div>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
-        listContainer.innerHTML += html;
     });
+
+    // ✅ อัปเดตหน้าจอทีเดียวตอนจบลูป (ช่วยให้เว็บลื่นขึ้นมาก)
+    listContainer.innerHTML = allCardsHtml;
 }
 
 // ==========================================
@@ -259,7 +268,7 @@ function loadProducts() {
             data.id = doc.id;
             
             const isSold = data.status === 'sold';
-            const isExpired = data.end_time_ms && new Date().getTime() > data.end_time_ms;
+            const isExpired = data.end_time && new Date().getTime() > data.end_time;
 
             // โชว์เฉพาะที่ (ยังไม่ขาย และ ยังไม่หมดเวลา)
             if (!isSold && !isExpired) {
@@ -312,7 +321,7 @@ AuthService.onUserChange(async (user) => {
         const btnLogin = document.getElementById('btnLogin'); 
         const btnLogout = document.getElementById('btnLogout');
         if (btnLogin && btnLogout) {
-            if (user.isAnonymous) { 
+            if (user.is_anonymous) { 
                 btnLogin.classList.remove('d-none'); 
                 btnLogout.classList.add('d-none'); 
             } else { 
@@ -322,13 +331,13 @@ AuthService.onUserChange(async (user) => {
         }
 
         // ดึงข้อมูล Guest ใหม่
-        const userSnap = await UserService.getUserProfile(user.uid);
+        const userSnap = await UserService.getUserProfile(user.id);
         
         // 🔍 เช็คของเก่าในเครื่อง
         const savedSecret = localStorage.getItem('my_guest_secret');
         
         // ถ้าเป็น Guest และข้อมูลในเครื่องไม่ตรงกับคนปัจจุบัน (แสดงว่าเรา Logout ออกมาแล้วได้ร่างใหม่)
-        const isNewIdentity = user.isAnonymous && savedSecret && 
+        const isNewIdentity = user.is_anonymous && savedSecret && 
                              (!userSnap.exists() || userSnap.data()?.secret_code !== savedSecret);
 
         if (isNewIdentity) {
@@ -350,8 +359,7 @@ AuthService.onUserChange(async (user) => {
                         const oldName = await UserService.recoverAccount(user, savedSecret);
                         
                         // กู้สำเร็จ! อัปเดตรหัสลับในเครื่องให้เป็นรหัสของ User ปัจจุบัน (เพราะย้ายข้อมูลมาแล้ว)
-                        // หมายเหตุ: การ Recover ใน Backend เราย้ายข้อมูลมาหา UID ใหม่ ดังนั้น Secret จะเปลี่ยนตาม UID ใหม่
-                        // เราต้องอนุญาตให้ Save ทับได้แล้วตอนนี้
+                        // หมายเหตุ: การ Recover ใน Backend เราย้ายข้อมูลมาหา ID ใหม่ ดังนั้น Secret จะเปลี่ยนตาม ID ใหม่
                         localStorage.setItem('my_guest_secret', userSnap.data()?.secret_code || savedSecret); // *แก้ Logic Backend ให้ส่ง Secret ใหม่กลับมาจะดีมาก*
                         
                         Swal.fire('ยินดีต้อนรับกลับ', `คุณ ${oldName}`, 'success').then(()=> window.location.reload());
@@ -373,7 +381,7 @@ AuthService.onUserChange(async (user) => {
         if (userSnap.exists()) {
             setupUserProfile(userSnap.data());
             // Realtime Update Profile
-            UserService.subscribeProfile(user.uid, (docSnap) => { 
+            UserService.subscribeProfile(user.id, (docSnap) => { 
                 if (docSnap.exists()) setupUserProfile(docSnap.data()); 
             });
         } else {
@@ -388,62 +396,156 @@ AuthService.onUserChange(async (user) => {
 });
 // ฟังก์ชันแยกออกมาเพื่อความสะอาด (สร้าง Profile ใหม่)
 async function setupNewGuestProfile(user) {
-    const defaultName = "Guest_" + user.uid.slice(0,4); 
-    const autoSecret = generateRandomCode(); 
-    const userData = { 
-        displayName: defaultName, 
-        uid: user.uid, 
-        secret_code: autoSecret, 
-        ip_address: currentIp, 
-        contact_email: user.email || "", 
-        created_at: new Date() 
-    };
-        await UserService.createProfile(user.uid, userData);
-    UserService.subscribeProfile(user.uid, (docSnap) => { 
-        if (docSnap.exists()) setupUserProfile(docSnap.data()); 
+    if (!user || !user.id) return; // 🛡️ กันระเบิดถ้า user ไม่มี
+
+    console.log("✅ Guest Profile handled by Database Trigger for:", user.id);
+    
+    // Logic การสร้างรหัสลับ (Secret Code) เก็บลงเครื่อง
+    const defaultName = "Guest_" + user.id.slice(0, 4);
+    
+    // ⚠️ เราจะไม่เรียก UserService.createProfile แล้ว เพราะ SQL ทำให้อัตโนมัติ
+    // แต่เราจะ Subscribe รอข้อมูลมาแทน
+    
+    UserService.subscribeProfile(user.id, (docSnap) => { 
+        if (docSnap.exists()) {
+            setupUserProfile(docSnap.data()); 
+        }
     }); 
 }
 
 function setupUserProfile(data) { 
+    // เก็บข้อมูลลง Cache
     userProfileCache = data; 
     isBanned = data.is_banned; 
-    updateUIName(data.displayName); 
+
+    // อัปเดตชื่อบน Navbar
+    updateUIName(data.username); 
+
+    // ถ้าเปิด Modal โปรไฟล์อยู่ ให้เติมข้อมูลลงฟอร์ม
     if(document.getElementById('profileSecretCode')) { 
         document.getElementById('profileSecretCode').value = data.secret_code || ""; 
         document.getElementById('profileEmail').value = data.contact_email || ""; 
     }
-        // ✅ เพิ่มใหม่: ถ้าเป็น Guest ให้แอบจด "รหัสลับ" ใส่เครื่องไว้
-    if (currentUser && currentUser.isAnonymous && data.secret_code) {
+
+    // ✅ แก้ไขแล้ว: currentuser -> currentUser (ตัว U ใหญ่)
+    // Logic: แอบจด "รหัสลับ" ใส่เครื่องไว้ ถ้าเป็น Guest
+    if (currentUser && currentUser.is_anonymous && data.secret_code) {
         const oldSecret = localStorage.getItem('my_guest_secret');
         
-        // ถ้ามีของเก่าอยู่แล้ว แต่ไม่ตรงกับตัวปัจจุบัน (แปลว่าเป็น Guest ใหม่) -> ห้ามทับ!! รอถามก่อน
+        // ถ้าไม่มีของเก่า หรือ ของเก่าตรงกับคนปัจจุบัน -> บันทึกได้
         if (!oldSecret || oldSecret === data.secret_code) {
              localStorage.setItem('my_guest_secret', data.secret_code);
         }
     }
-    const isLinked = currentUser.providerData.some(p => p.providerId === 'password'); 
+
+    // ส่วนจัดการปุ่ม Link Account (ใส่ ? ป้องกัน Error ถ้า providerData เป็น null)
+    const isLinked = currentUser?.providerData?.some(p => p.providerId === 'password'); 
     const linkSection = document.getElementById('linkAccountSection'); 
+    
     if(isLinked && linkSection) { 
         linkSection.innerHTML = `<div class="text-success text-center py-2"><i class="bi bi-check-circle-fill"></i> บัญชีนี้ผูกกับอีเมลแล้ว</div>`; 
     } 
-    if(isBanned) document.body.innerHTML = "<div class='vh-100 d-flex justify-content-center align-items-center bg-danger'><h1 class='text-white'>🚫 BANNED</h1></div>"; 
+
+    // ถ้าโดนแบน ให้ล้างหน้าจอทิ้งเลย
+    if(isBanned) {
+        document.body.innerHTML = "<div class='vh-100 d-flex justify-content-center align-items-center bg-danger'><h1 class='text-white'>🚫 BANNED</h1></div>"; 
+    }
 }
 
-function updateUIName(name) { const el = document.getElementById('navUsername'); if(el) el.innerText = name; }
+function updateUIName(name) { 
+    const el = document.getElementById('navUsername'); 
+    if(el) el.innerText = name; 
+}
 
-// Timer Logic (คงเดิม เพราะทำงานฝั่ง Client)
-setInterval(() => { const modal = document.getElementById('auctionModal'); if (currentProductEndTime && modal && modal.classList.contains('show')) { updateTimerUI(currentProductEndTime, 'modalTimer', 'modalTimerBadge', true); } document.querySelectorAll('.card-timer').forEach(el => { const endTime = Number(el.dataset.endTime); const badgeId = el.id.replace('timer-', 'badge-'); updateTimerUI(endTime, el.id, badgeId, false); }); }, 1000);
-function updateTimerUI(endTimeMs, textId, badgeId, isModal) { const now = new Date().getTime(); const distance = endTimeMs - now; const textEl = document.getElementById(textId); const badgeEl = document.getElementById(badgeId); if (!textEl) return; if (distance < 0) { textEl.innerText = "ปิดประมูลแล้ว"; if(badgeEl) { badgeEl.className = "badge bg-secondary"; if(badgeEl.parentElement.classList.contains('text-warning')) { badgeEl.parentElement.className = "text-danger small fw-bold"; } } if(isModal) { document.getElementById('bidControlSection').classList.add('d-none'); document.getElementById('buyNowSection').classList.add('d-none'); if(document.getElementById('soldBadge').classList.contains('d-none')) { document.getElementById('auctionEndedMsg').classList.remove('d-none'); } else { document.getElementById('auctionEndedMsg').classList.add('d-none'); } } } else { const days = Math.floor(distance / (1000 * 60 * 60 * 24)); const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)); const seconds = Math.floor((distance % (1000 * 60)) / 1000); let timeString = ""; if(days > 0) timeString += `${days}วัน `; timeString += `${hours}ชม. ${minutes}น. ${seconds}วิ.`; textEl.innerText = timeString; if(distance < 5 * 60 * 1000 && badgeEl) { badgeEl.className = "badge bg-danger animate__animated animate__flash"; } } }
+// ==========================================
+// Timer Logic (ทำงานถูกต้องแล้วครับ)
+// ==========================================
+setInterval(() => { 
+    const modal = document.getElementById('auctionModal'); 
+    // อัปเดตเวลาใน Modal (ถ้าเปิดอยู่)
+    if (currentProductEndTime && modal && modal.classList.contains('show')) { 
+        updateTimerUI(currentProductEndTime, 'modalTimer', 'modalTimerBadge', true); 
+    } 
+    // อัปเดตเวลาในการ์ดหน้าแรก
+    document.querySelectorAll('.card-timer').forEach(el => { 
+        const endTime = Number(el.dataset.endTime); 
+        const badgeId = el.id.replace('timer-', 'badge-'); 
+        updateTimerUI(endTime, el.id, badgeId, false); 
+    }); 
+}, 1000);
 
+function updateTimerUI(endTimeMs, textId, badgeId, isModal) { 
+    const now = new Date().getTime(); 
+    const distance = endTimeMs - now; 
+    const textEl = document.getElementById(textId); 
+    const badgeEl = document.getElementById(badgeId); 
+    
+    if (!textEl) return; 
+
+    // กรณีหมดเวลา
+    if (distance < 0) { 
+        textEl.innerText = "ปิดประมูลแล้ว"; 
+        
+        if(badgeEl) { 
+            badgeEl.className = "badge bg-secondary"; 
+            // แก้สีข้อความในการ์ดให้เป็นสีแดงเพื่อเน้น
+            if(badgeEl.parentElement.classList.contains('text-warning')) { 
+                badgeEl.parentElement.className = "text-danger small fw-bold"; 
+            } 
+        } 
+        
+        // ถ้าเป็น Modal ให้ซ่อนปุ่มบิด/ซื้อ
+        if(isModal) { 
+            document.getElementById('bidControlSection').classList.add('d-none'); 
+            document.getElementById('buyNowSection').classList.add('d-none'); 
+            
+            // ถ้ายังไม่ขึ้น Sold ให้ขึ้นว่าปิดประมูล
+            if(document.getElementById('soldBadge').classList.contains('d-none')) { 
+                document.getElementById('auctionEndedMsg').classList.remove('d-none'); 
+            } else { 
+                document.getElementById('auctionEndedMsg').classList.add('d-none'); 
+            } 
+        } 
+    } else { 
+        // กรณีเวลายังเดินอยู่
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24)); 
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); 
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)); 
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000); 
+        
+        let timeString = ""; 
+        if(days > 0) timeString += `${days}วัน `; 
+        timeString += `${hours}ชม. ${minutes}น. ${seconds}วิ.`; 
+        
+        textEl.innerText = timeString; 
+        
+        // ถ้าเหลือเวลา < 5 นาที ให้กระพริบเตือน (Animation Flash)
+        if(distance < 5 * 60 * 1000 && badgeEl) { 
+            badgeEl.className = "badge bg-danger animate__animated animate__flash"; 
+        } 
+    } 
+}
 // ==========================================
 // F. Modal Logic (ใช้ Service)
 // ==========================================
 window.openAuction = function(id, title, price, img, desc) {
+    // 1. ลองหาข้อมูลสินค้าจาก allProducts ก่อน (กรณีคลิกหน้าแรกแล้วส่งมาแค่ ID)
+    const itemFromCache = allProducts.find(p => p.id === id);
+
+    // 2. คำนวณค่าที่ปลอดภัย (ถ้าไม่มีใน argument ให้เอาจาก cache, ถ้าไม่มีอีกให้เอาค่า default)
+    const safeTitle = title || itemFromCache?.title || "กำลังโหลด...";
+    // ✅ แก้ปัญหา 404: ถ้าไม่มีรูป ให้ใช้ Placeholder
+    const safeImg = img || itemFromCache?.image_url || "https://via.placeholder.com/300?text=No+Image"; 
+    const safeDesc = desc || itemFromCache?.description || "";
+    
+    // 3. เซ็ตค่าลง Modal (ทำแค่รอบเดียวพอ!)
     currentProductId = id;
     
-    document.getElementById('modalTitle').innerText = title;
-    document.getElementById('modalImage').src = img;
-    document.getElementById('modalDesc').innerText = desc;
+    document.getElementById('modalTitle').innerText = safeTitle;
+    document.getElementById('modalImage').src = safeImg; 
+    document.getElementById('modalDesc').innerText = safeDesc;
+
+    // 4. รีเซ็ต UI ส่วนอื่นๆ
     document.getElementById('bidInput').value = "";
     document.getElementById('bidHistoryList').innerHTML = "<div class='text-center small mt-4 text-secondary'>กำลังโหลดประวัติ...</div>";
     
@@ -465,8 +567,9 @@ window.openAuction = function(id, title, price, img, desc) {
     unsubscribeProduct = AuctionService.subscribeAuctionDetail(id, (docSnapshot) => {
         if (docSnapshot.exists()) {
             const data = docSnapshot.data();
-            currentSellerUid = data.seller_uid;
+            currentSellerId = data.seller_id;
 
+            // อัปเดตข้อมูล Realtime ทับอีกทีเมื่อโหลดเสร็จ
             const modalPrice = document.getElementById('modalPrice');
             if (data.current_price !== null && data.current_price !== undefined) {
                 modalPrice.innerText = `฿${data.current_price.toLocaleString()}`;
@@ -478,7 +581,12 @@ window.openAuction = function(id, title, price, img, desc) {
                 modalPrice.innerText = "-";
             }
 
-            if(data.end_time_ms) currentProductEndTime = data.end_time_ms;
+            // อัปเดตชื่อและรูปอีกครั้ง (เผื่อมีการแก้ไขจากหลังบ้าน)
+            document.getElementById('modalTitle').innerText = data.title;
+            if(data.image_url) document.getElementById('modalImage').src = data.image_url;
+            document.getElementById('modalDesc').innerText = data.description;
+
+            if(data.end_time) currentProductEndTime = new Date(data.end_time).getTime();
             
             if(data.contact_email) {
                 document.getElementById('modalEmailLink').href = `mailto:${data.contact_email}`;
@@ -488,20 +596,23 @@ window.openAuction = function(id, title, price, img, desc) {
             const catMap = { 'it': 'ไอที', 'fashion': 'แฟชั่น', 'amulet': 'พระเครื่อง', 'home': 'ของใช้', 'other': 'อื่นๆ' };
             document.getElementById('modalCategoryBadge').innerText = catMap[data.category] || 'สินค้าทั่วไป';
 
+            // Seller Name Logic
             if (data.seller_name) {
                 document.getElementById('modalSellerName').innerText = data.seller_name;
-            } else if(data.seller_uid) {
-                UserService.getUserProfile(data.seller_uid).then(uSnap => {
-                    if(uSnap.exists()) document.getElementById('modalSellerName').innerText = uSnap.data().displayName;
+            } else if(data.seller_id) {
+                UserService.getUserProfile(data.seller_id).then(uSnap => {
+                    if(uSnap.exists()) document.getElementById('modalSellerName').innerText = uSnap.data().username;
                 });
             }
 
-            if (currentUser && currentUser.uid === data.seller_uid && data.status !== 'sold') {
+            // ปุ่มแก้ไข
+            if (currentUser && currentUser.id === data.seller_id && data.status !== 'sold') {
                 document.getElementById('modalEditBtn').classList.remove('d-none');
             } else {
                 document.getElementById('modalEditBtn').classList.add('d-none');
             }
 
+            // สถานะ Sold / Buy Now
             if (data.status === 'sold') {
                 document.getElementById('soldBadge').classList.remove('d-none');
                 document.getElementById('soldMsg').classList.remove('d-none');
@@ -529,17 +640,28 @@ window.openAuction = function(id, title, price, img, desc) {
         } else {
             snapshot.forEach((doc) => {
                 const bid = doc.data();
-                const timeStr = bid.timestamp ? new Date(bid.timestamp.seconds * 1000).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}) : "";
+                // แปลง timestamp ของ supabase
+                const bidTime = bid.created_at ? new Date(bid.created_at) : new Date();
+                const timeStr = bidTime.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+                
+                // หาชื่อคนบิด (ถ้าไม่มีใน bid object ให้หาจาก profile)
+                let bidderName = "Unknown";
+                if (bid.profiles && bid.profiles.username) {
+                    bidderName = bid.profiles.username;
+                } else if (bid.bidder_name) {
+                    bidderName = bid.bidder_name;
+                }
+
                 const html = `
                     <div class="d-flex justify-content-between border-bottom py-2 px-2 align-items-center">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-person-circle text-secondary"></i>
                             <div>
-                                <div class="text-dark fw-bold small">${bid.bidder_name}</div>
+                                <div class="text-dark fw-bold small">${bidderName}</div>
                                 <small class="text-secondary" style="font-size: 0.65rem;">${timeStr}</small>
                             </div>
                         </div>
-                        <div class="text-success fw-bold">฿${bid.amount.toLocaleString()}</div>
+                        <div class="text-success fw-bold">฿${Number(bid.amount).toLocaleString()}</div>
                     </div>
                 `;
                 historyList.innerHTML += html;
@@ -549,8 +671,6 @@ window.openAuction = function(id, title, price, img, desc) {
 
     new bootstrap.Modal(document.getElementById('auctionModal')).show();
 }
-document.getElementById('auctionModal').addEventListener('hidden.bs.modal', () => { if (unsubscribeProduct) unsubscribeProduct(); if (unsubscribeBids) unsubscribeBids(); currentProductEndTime = null; });
-
 
 // ==========================================
 // G. Add & Edit Item (ใช้ Service)
@@ -602,26 +722,39 @@ if(addForm) {
 
         try {
             toggleLoading(true);
-            const file = fileInput.files[0];
-            
-            // 🔥 เรียก Service: Upload
+           const file = fileInput.files[0];
+    
+            // 1. Upload รูป
             const imageUrl = await StorageService.uploadImage(file);
 
-            // 🔥 เรียก Service: Create Auction
+            // 2. สร้างสินค้า (ส่งแค่ข้อมูลที่ User กรอก + ค่าที่คำนวณได้)
+            // ⚠️ ไม่ต้องแปลงชื่อตัวแปรให้ตรง DB ตรงนี้ เดี๋ยวให้ api.js ทำให้
             await AuctionService.createAuction({
                 title: title, 
                 category: document.getElementById('inpCategory').value || "other", 
                 description: document.getElementById('inpDesc').value, 
+                
+                // ราคา
                 current_price: price, 
                 buy_now_price: buyNowPrice,
-                bid_increment: bidIncrement,
+                bid_increment: bidIncrement, // ส่งชื่อนี้ไป เดี๋ยว api.js แปลงเป็น min_bid_increment เอง
+                
+                // ข้อมูลติดต่อ
                 contact_email: email,
                 image_url: imageUrl, 
-                status: 'active', 
-                seller_uid: currentUser ? currentUser.uid : "guest", 
-                seller_name: document.getElementById('navUsername').innerText,
-                end_time_ms: endTimeMs
+                
+                // ผู้ขาย
+                seller_id: currentUser ? currentUser.id : "guest", 
+                // seller_name ไม่ต้องส่งก็ได้ (เพราะ DB ไม่เก็บ) หรือจะส่งไปแล้วให้ api.js ลบออกก็ได้
+                
+                // เวลา (ส่งเป็น ms ไปเลย ง่ายกว่า)
+                end_time: endTimeMs, // ✅ แก้จาก data.end_time เป็น endTimeMs
+                
+                // start_time ไม่ต้องส่ง เดี๋ยว api.js สร้างเวลาปัจจุบันให้
+                status: 'active'
             });
+
+            
             
             toggleLoading(false); 
             Swal.fire({
@@ -664,21 +797,26 @@ if(editForm) {
         const buyNowPrice = buyNowVal ? Number(buyNowVal) : null;
 
         try {
-            toggleLoading(true);
-            let imageUrl = document.getElementById('currentImageUrl').value; 
-            if (fileInput.files.length > 0) {
-                // 🔥 เรียก Service: Upload
-                imageUrl = await StorageService.uploadImage(fileInput.files[0]);
-            }
-            // 🔥 เรียก Service: Update Auction
-            await AuctionService.updateAuction(pid, {
-                title: document.getElementById('editTitle').value, 
-                description: document.getElementById('editDesc').value,
-                category: document.getElementById('editCategory').value || "other",
-                buy_now_price: buyNowPrice,
-                image_url: imageUrl, 
-                contact_email: document.getElementById('editEmail').value, 
-                end_time_ms: endTimeMs,
+        toggleLoading(true);
+        let imageUrl = document.getElementById('currentImageUrl').value; 
+        
+        // เช็คว่ามีการอัปโหลดรูปใหม่ไหม
+        if (fileInput.files.length > 0) {
+            // 🔥 เรียก Service: Upload
+            imageUrl = await StorageService.uploadImage(fileInput.files[0]);
+        }
+
+        // 🔥 เรียก Service: Update Auction
+        await AuctionService.updateAuction(pid, {
+            title: document.getElementById('editTitle').value, 
+            description: document.getElementById('editDesc').value,
+            category: document.getElementById('editCategory').value || "other",
+            buy_now_price: buyNowPrice,
+            image_url: imageUrl, 
+            contact_email: document.getElementById('editEmail').value, 
+            
+            // ✅ แก้ตรงนี้: เปลี่ยน key เป็น end_time_ms เพื่อให้ api.js รู้ว่าเป็นตัวเลข
+            end_time: endTimeMs
             });
             toggleLoading(false); 
                 Swal.fire({
@@ -710,6 +848,16 @@ window.openEditModal = async function() {
     
     if(docSnap.exists()) {
         const data = docSnap.data();
+            // ✅ เพิ่ม: เช็คว่าเป็นเจ้าของไหม
+        if (currentUser.id !== data.seller_id) {
+            toggleLoading(false);
+            return Swal.fire({
+                icon: 'error',
+                title: 'ห้ามแก้ไข',
+                text: 'คุณไม่ใช่เจ้าของสินค้านี้',
+                confirmButtonColor: '#ff6b6b'
+            });
+        }
         document.getElementById('editProductId').value = currentProductId;
         document.getElementById('editTitle').value = data.title;
         document.getElementById('editDesc').value = data.description;
@@ -718,13 +866,18 @@ window.openEditModal = async function() {
         document.getElementById('editBuyNowPrice').value = data.buy_now_price || "";
         document.getElementById('currentImageUrl').value = data.image_url;
         
+        const safeImageUrl = data.image_url || ""; // ถ้าไม่มีให้เป็นค่าว่าง
+        document.getElementById('currentImageUrl').value = safeImageUrl;
+
         const imgDisplay = document.getElementById('editCurrentImgDisplay'); 
-        if (imgDisplay) imgDisplay.src = data.image_url;
-        
+        if (imgDisplay) {
+            // ถ้า URL ว่าง ให้ใส่รูป Placeholder แทน undefined
+            imgDisplay.src = safeImageUrl || 'https://via.placeholder.com/150?text=No+Image';
+        }
         document.getElementById('editFile').value = "";
         document.getElementById('editEmail').value = data.contact_email || "";
-        if(data.end_time_ms) {
-            const date = new Date(data.end_time_ms);
+        if(data.end_time) {
+            const date = new Date(data.end_time);
             const tzOffset = date.getTimezoneOffset() * 60000; 
             const localISOTime = (new Date(date - tzOffset)).toISOString().slice(0, 16);
             document.getElementById('editEndTime').value = localISOTime;
@@ -751,7 +904,7 @@ window.placeBid = async function() {
                     text: 'กรุณากู้คืนบัญชีเดิมก่อน',
                     confirmButtonColor: '#ff6b6b'   
                 });
-    if(currentUser && currentSellerUid === currentUser.uid) 
+    if(currentUser && currentSellerId === currentUser.id) 
         return Swal.fire({
                     icon: 'error',
                     title: 'เกิดข้อผิดพลาด',
@@ -779,7 +932,7 @@ window.placeBid = async function() {
                     text: 'สินค้านี้ขายแล้ว!',
                     confirmButtonColor: '#ff6b6b'   
                 });
-            if (data.end_time_ms && now > data.end_time_ms) 
+            if (data.end_time && now > data.end_time) 
                 return Swal.fire({
                     icon: 'error',
                     title: 'อุ๊ปส์...',
@@ -813,7 +966,7 @@ window.placeBid = async function() {
             // 🔥 เรียก Service: Place Bid
             await AuctionService.placeBid(currentProductId, {
                 amount: bidAmount, 
-                bidder_uid: currentUser.uid, 
+                bidder_id: currentUser.id, 
                 bidder_name: myName
             }, data);
 
@@ -836,7 +989,7 @@ window.buyNow = async function() {
                     text: "กรุณากู้คืนบัญชีเดิมก่อน", 
                     confirmButtonColor: '#ff6b6b'
                 });
-    if(currentUser && currentSellerUid === currentUser.uid) 
+    if(currentUser && currentSellerId === currentUser.id) 
         return  Swal.fire({
                     icon: 'error',
                     title: 'อุ๊ปส์...',
@@ -879,7 +1032,7 @@ window.buyNow = async function() {
             // 🔥 เรียก Service: Buy Now
             await AuctionService.buyNow(currentProductId, {
                 amount: data.buy_now_price,
-                buyer_uid: currentUser.uid,
+                winner_id: currentUser.id,
                 bidder_name: myName
             });
             
@@ -923,10 +1076,13 @@ window.updateUserProfile = async function() {
     if(newName && currentUser) { 
         toggleLoading(true); 
         // 🔥 เรียก Service
-        await UserService.updateProfile(currentUser.uid, { 
-            displayName: newName, 
+        await UserService.updateProfile(currentUser.id, { 
+            username: newName, 
             contact_email: document.getElementById('profileEmail').value 
         }); 
+        updateUIName(newName);
+        if(userProfileCache) userProfileCache.username = newName;
+        
         toggleLoading(false); 
         Swal.fire({
             icon: 'success',
@@ -955,8 +1111,8 @@ window.linkAccount = async function() {
         await AuthService.linkEmailAccount(currentUser, email, password);
         const currentName = document.getElementById('navUsername').innerText; // ดึงชื่อปัจจุบันมาด้วย
 
-        await UserService.updateProfile(currentUser.uid, { 
-            displayName: currentName, // <--- ต้องส่งอันนี้ไปด้วย เพราะ Backend บังคับ
+        await UserService.updateProfile(currentUser.id, { 
+            username: currentName, // <--- ต้องส่งอันนี้ไปด้วย เพราะ Backend บังคับ
             contact_email: email 
         });
         toggleLoading(false); 
@@ -1058,7 +1214,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 window.shareAuction = function() {
     if (!currentProductId) return;
 
-    // สร้างลิ้งค์พิเศษ (ชี้ไปที่ Python Backend)
     const backendUrl = "https://auction-backend-1089558422014.asia-southeast1.run.app"; // 🔴 ใส่ URL Backend จริง
     const shareUrl = `${backendUrl}/share/${currentProductId}`;
 
