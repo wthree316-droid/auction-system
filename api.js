@@ -1,6 +1,6 @@
 import { supabase } from "./supabase-client.js";
 
-const PYTHON_API_URL = "http://127.0.0.1:8000"; 
+const PYTHON_API_URL = "https://auction-backend-1089558422014.asia-southeast1.run.app"; 
 
 // ==========================================
 // 1. Authentication Service
