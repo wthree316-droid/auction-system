@@ -1,0 +1,396 @@
+/* =======================================================
+   1. GLOBAL VARIABLES (:root) - ประกาศที่เดียวใช้ได้ทั้งเว็บ
+   ======================================================= */
+:root {
+    /* 🎨 Color Palette */
+    --primary-color: #ff6b6b;
+    --secondary-color: #1dd1a1;
+    --accent-color: #feca57;
+    --text-color: #2d3436;
+    
+    /* 🖼️ Backgrounds */
+    --bg-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --bg-gradient-soft: radial-gradient(at 0% 0%, rgba(255, 107, 107, 0.05) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(29, 209, 161, 0.05) 0px, transparent 50%);
+    --bg-gradient-login: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+
+    /* 🌑 Shadows */
+    --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.1);
+}
+
+/* =======================================================
+   2. BASE STYLES (Body & Typography)
+   ======================================================= */
+body { 
+    background-color: var(--bg-color); 
+    background-image: var(--bg-gradient-soft); /* พื้นหลังมาตรฐาน (Index, History, Admin) */
+    color: var(--text-color); 
+    font-family: 'Kanit', sans-serif; 
+    min-height: 100vh;
+    padding-bottom: 80px;
+}
+
+h1, h2, h3, h4, h5, .navbar-brand { font-family: 'Fredoka', sans-serif; }
+
+/* Scrollbar Customization */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
+
+
+/* =======================================================
+   3. SHARED COMPONENTS (Navbar, Buttons, Forms, Modals)
+   ======================================================= */
+
+/* --- Navbar --- */
+.navbar-glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+/* --- Buttons --- */
+.btn-main {
+    background: var(--primary-color);
+    color: #fff;
+    border: none; font-weight: 600;
+    border-radius: 50px; padding: 10px 25px;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    transition: all 0.2s ease;
+}
+.btn-main:hover { 
+    background: #ff5252;
+    transform: translateY(-2px); 
+    color: #fff;
+}
+
+.btn-gold { 
+    background: #fff; color: #f39c12; 
+    border: 1px solid #f39c12; border-radius: 50px; font-weight: 600;
+}
+.btn-gold:hover { background: #f39c12; color: #fff; }
+
+.btn-outline-custom { 
+    background: #fff;
+    border: 1px solid #eee; color: #888; 
+    border-radius: 50%; width: 45px; height: 45px; 
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s;
+}
+.btn-outline-custom:hover { 
+    color: var(--secondary-color); border-color: var(--secondary-color);
+    transform: rotate(15deg); 
+}
+
+/* --- Inputs & Forms --- */
+.input-group-custom {
+    border-radius: 50px; padding: 4px; background-color: #fff;
+    border: 1px solid #eee; box-shadow: var(--shadow-soft);
+}
+.input-group-custom:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+}
+.form-select-custom {
+    background-color: #fff; border: 1px solid #eee;
+    color: var(--text-color); border-radius: 20px;
+    box-shadow: var(--shadow-soft);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ff6b6b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+.form-control, .form-select {
+    background: #f8f9fa; border: 1px solid #eee; color: var(--text-color);
+    border-radius: 15px; padding: 12px;
+}
+.form-control:focus {
+    background: #fff; box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1); border-color: var(--primary-color);
+}
+
+/* --- Generic Cards --- */
+.card-custom {
+    background: #fff; border: none; border-radius: 20px;
+    overflow: hidden; transition: all 0.3s ease;
+    box-shadow: var(--shadow-soft);
+}
+.card-custom:hover {
+    transform: translateY(-8px); box-shadow: var(--shadow-hover);
+}
+.product-img-wrapper { 
+    position: relative; overflow: hidden; padding-top: 100%; 
+    border-radius: 15px; margin: 12px 12px 0 12px;
+    background-color: #f8f9fa; 
+}
+.product-img-list { 
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; 
+    transition: transform 0.5s ease;
+}
+.card-custom:hover .product-img-list { transform: scale(1.08); }
+
+/* --- Modals --- */
+.modal-content { 
+    background-color: #fff; border: none; border-radius: 30px; 
+    overflow: hidden; box-shadow: var(--shadow-hover);
+}
+.modal-image-col { background-color: #f1f2f6 !important; background-image: none !important; }
+.modal-info-col { background-color: #ffffff !important; border-left: none !important; }
+.btn-close-modal {
+    background: #fff; color: #333;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 50%; width: 40px; height: 40px; border: none;
+    position: absolute; top: 20px; right: 20px; z-index: 100;
+}
+
+/* Modal Responsive Fixes */
+@media (max-width: 991.98px) {
+    .modal-body .row { flex-direction: column; }
+    .modal-image-col { height: 350px; min-height: auto !important; }
+    .modal-info-col { border-top: 1px solid #eee; }
+}
+@media (min-width: 992px) { 
+    .modal-image-col { min-height: 600px; } 
+    .scrollable-content { overflow-y: auto; flex-grow: 1; max-height: 400px; }
+}
+
+/* =======================================================
+   4. PAGE SPECIFIC: INDEX & PRODUCTS
+   ======================================================= */
+/* Sold Overlay */
+.sold-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center; z-index: 10;
+}
+.sold-text {
+    background: var(--secondary-color); color: white;
+    font-size: 1.2rem; font-weight: 900;
+    padding: 8px 30px; border-radius: 50px;
+    transform: rotate(-10deg);
+    box-shadow: 0 5px 15px rgba(29, 209, 161, 0.4);
+    border: 3px solid white;
+}
+
+
+/* =======================================================
+   5. PAGE SPECIFIC: LOGIN
+   ======================================================= */
+/* ต้องใส่ class="login-page" ที่ body ของไฟล์ login.html */
+body.login-page {
+    background: var(--bg-gradient-login);
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    height: 100vh;
+    padding-bottom: 0; /* Override ค่า Default */
+}
+
+.login-card { 
+    background: rgba(255, 255, 255, 0.95); 
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 1);
+    width: 100%; 
+    max-width: 400px; 
+    padding: 3rem; 
+    border-radius: 30px; 
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08); 
+    transform: translateY(0);
+    transition: transform 0.3s;
+}
+.login-card:hover { transform: translateY(-5px); }
+
+.brand-icon {
+    width: 70px; height: 70px;
+    background: linear-gradient(45deg, #ff6b6b, #ff9ff3);
+    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+}
+.btn-guest { 
+    border: 2px solid #f1f2f6; color: #636e72; padding: 10px;
+    background: transparent; font-weight: 600;
+}
+.btn-guest:hover { border-color: #2d3436; color: #2d3436; background: #fff; }
+
+
+/* =======================================================
+   6. PAGE SPECIFIC: HISTORY & STATS
+   ======================================================= */
+/* Stats Cards */
+.stat-card {
+    background: #fff;
+    border: none; border-radius: 20px;
+    padding: 24px; text-align: center;
+    transition: all 0.3s ease; height: 100%;
+    box-shadow: var(--shadow-soft);
+    position: relative; overflow: hidden;
+}
+.stat-card:hover { 
+    transform: translateY(-5px); box-shadow: var(--shadow-hover);
+}
+.stat-card::after {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+}
+.stat-card.stat-sold::after { background: var(--secondary-color); }
+.stat-card.stat-revenue::after { background: var(--primary-color); }
+.stat-card.stat-auction::after { background: var(--accent-color); }
+
+.stat-icon {
+    width: 60px; height: 60px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; margin: 0 auto 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+/* History Cards */
+.card-history {
+    background-color: #fff; border: none; border-radius: 20px;
+    overflow: hidden; transition: all 0.3s ease;
+    box-shadow: var(--shadow-soft);
+}
+.card-history:hover {
+    transform: translateY(-8px); box-shadow: var(--shadow-hover);
+}
+.card-history:hover .product-img-list { transform: scale(1.08); }
+
+/* History Badges & Overlays */
+.status-badge {
+    position: absolute; top: 12px; right: 12px;
+    padding: 6px 14px; border-radius: 30px;
+    font-weight: 700; font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 1px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 2; border: 2px solid #fff;
+}
+.bg-sold { background: var(--secondary-color); color: #fff; }
+.bg-won { background: var(--accent-color); color: #fff; }
+
+.overlay-badge {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 5; pointer-events: none;
+    transition: opacity 0.3s;
+}
+.card-history:hover .overlay-badge { opacity: 0; }
+
+.text-stamp {
+    font-size: 1.2rem; font-weight: 900; 
+    text-transform: uppercase; letter-spacing: 2px;
+    padding: 8px 20px; border-radius: 50px;
+    transform: rotate(-10deg);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border: 3px solid #fff;
+}
+.stamp-sold { background: var(--secondary-color); color: #fff; }
+.stamp-won { background: var(--accent-color); color: #fff; }
+
+.winner-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 600;
+}
+.winner-tag.silver { background: #f1f2f6; color: #636e72; }
+.winner-tag.gold { background: #fff9db; color: #f39c12; }
+
+.section-title { font-weight: 700; color: var(--text-color); display: flex; align-items: center; gap: 10px; }
+.count-badge { 
+    background: #f1f2f6; color: #636e72; 
+    padding: 2px 10px; border-radius: 10px; font-size: 0.9rem;
+}
+
+
+/* =========================================
+   1. IMPROVED RESPONSIVE SEARCH BAR
+   ========================================= */
+/* Container หลักของ Search bar และ Filter */
+.search-container {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    align-items: center;
+}
+
+.search-box {
+    flex-grow: 1; /* กินพื้นที่ที่เหลือทั้งหมด */
+}
+
+.filter-group {
+    display: flex;
+    gap: 10px;
+}
+
+/* 📱 Mobile Layout (หน้าจอมือถือ/แท็บเล็ตแนวตั้ง) */
+@media (max-width: 991px) {
+    .search-container {
+        flex-direction: column; /* เรียงลงแนวตั้ง */
+        gap: 10px;
+    }
+    
+    .search-box {
+        width: 100%; /* ช่องค้นหาเต็มจอ */
+    }
+    
+    .filter-group {
+        width: 100%; /* กลุ่มตัวกรองเต็มจอ */
+    }
+    
+    .filter-group select {
+        flex: 1; /* แบ่งครึ่งความกว้างเท่ากันเป๊ะ */
+        width: 50%;
+    }
+}
+
+/* =========================================
+   2. SUPERB ACTION BUTTONS (Dashboard & Recover)
+   ========================================= */
+.btn-superb {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* ระยะห่างไอคอนกับตัวหนังสือ */
+    padding: 8px 16px;
+    border-radius: 50px;
+    background: #ffffff;
+    border: 1px solid #f0f0f0;
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap; /* ห้ามตัวหนังสือขึ้นบรรทัดใหม่ */
+}
+
+/* เอฟเฟกต์ตอนชี้เมาส์ (Hover) */
+.btn-superb:hover {
+    transform: translateY(-3px); /* ลอยขึ้นนิดนึง */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08); /* เงาฟุ้งขึ้น */
+}
+
+/* 🎨 ปุ่ม Dashboard (สีฟ้า/มิ้นต์) */
+.btn-superb-dash i { color: var(--secondary-color); font-size: 1.1rem; }
+.btn-superb-dash:hover {
+    border-color: var(--secondary-color);
+    background: #f0fff4; /* พื้นหลังเขียวอ่อนจางๆ */
+    color: var(--secondary-color);
+}
+
+/* 🎨 ปุ่มกู้คืน (สีส้ม/เหลือง) */
+.btn-superb-recover i { color: var(--accent-color); font-size: 1.1rem; }
+.btn-superb-recover:hover {
+    border-color: var(--accent-color);
+    background: #fffbf0; /* พื้นหลังเหลืองอ่อนจางๆ */
+    color: #e67e22;
+}
+
+/* ซ่อนข้อความเมื่อจอเล็กมากๆ (มือถือจอเล็กสุดๆ) เพื่อประหยัดที่ */
+@media (max-width: 450px) {
+    .btn-superb span { display: none; }
+    .btn-superb { padding: 10px; border-radius: 50%; width: 42px; height: 42px; justify-content: center; }
+    .btn-superb i { margin: 0; }
+}
