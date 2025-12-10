@@ -14,7 +14,7 @@ let unsubscribeBids = null;
 let currentSellerId = null;
 
 // ==========================================
-// A. ระบบค้นหา & กรอง (UI Logic คงเดิม ไม่ต้องแก้)
+// A. ระบบค้นหา & กรองสินค้า (UI Logic คงเดิม)
 // ==========================================
 const searchInput = document.getElementById('searchInput');
 const filterCategory = document.getElementById('filterCategory');
@@ -65,22 +65,19 @@ function renderProducts(products) {
     let allCardsHtml = ""; 
 
     products.forEach(item => {
-        // 1. ตัวแปรที่ไม่ได้ใช้ (safeTitle, safeDesc) ลบทิ้งได้เลยครับ เพราะ onclick เราส่งแค่ ID แล้ว
-        
+        // ✅ item คือ Object ข้อมูลสินค้าเลย (ไม่ต้อง .data())
         const timerId = `timer-${item.id}`;
         const endTime = item.end_time ? new Date(item.end_time).getTime() : 0;
         
         let soldOverlay = item.status === 'sold' ? `<div class="sold-overlay"><div class="sold-text">SOLD</div></div>` : "";
-        
         const catMap = { 'it': 'ไอที', 'fashion': 'แฟชั่น', 'amulet': 'พระเครื่อง', 'home': 'ของใช้', 'other': 'อื่นๆ' };
         const catName = catMap[item.category] || 'อื่นๆ';
         const sellerName = item.seller_name || "ผู้ขาย";
 
-        // --- Logic แสดงราคา (ปลอดภัยแล้ว) ---
+        // Logic ราคา
         let priceDisplayHtml = "";
         const currentPrice = item.current_price || 0;
         const buyNowPrice = item.buy_now_price || 0;
-
         const safeCurrentPrice = (item.current_price ?? 0).toLocaleString();
         const safeBuyNowPrice = (item.buy_now_price ?? 0).toLocaleString();
 
@@ -94,10 +91,8 @@ function renderProducts(products) {
             priceDisplayHtml = `<p class="card-text text-muted mb-2 small">รอราคาเปิด</p>`;
         }
 
-        // ป้องกันชื่อสินค้าทำ HTML พังใน attribute alt
         const safeTitleForAlt = item.title.replace(/"/g, '&quot;'); 
 
-        // ต่อ String ใส่ตัวแปรแทนการยัดเข้า DOM ทันที
         allCardsHtml += `
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="card h-100 cursor-pointer position-relative card-custom" onclick="openAuction('${item.id}')">
@@ -123,10 +118,9 @@ function renderProducts(products) {
             </div>
         `;
     });
-
-    // ✅ อัปเดตหน้าจอทีเดียวตอนจบลูป (ช่วยให้เว็บลื่นขึ้นมาก)
     listContainer.innerHTML = allCardsHtml;
 }
+
 
 // ==========================================
 // B. Dashboard (เรียก Service เพื่อคำนวณ)
@@ -260,19 +254,17 @@ function loadProducts() {
     const listContainer = document.getElementById('productList');
     if(!listContainer) return;
     
-    // 🔥 เรียก Service
-    AuctionService.subscribeAuctions((snapshot) => {
+    // 🔥 รับมาเป็น Array ตรงๆ (productsArray)
+    AuctionService.subscribeAuctions((productsArray) => {
         allProducts = [];
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            data.id = doc.id;
-            
-            const isSold = data.status === 'sold';
-            const isExpired = data.end_time && new Date().getTime() > data.end_time;
+        productsArray.forEach((item) => {
+            // ✅ item คือ object ข้อมูลเลย
+            const isSold = item.status === 'sold';
+            const endTimeVal = item.end_time ? new Date(item.end_time).getTime() : 0;
+            const isExpired = endTimeVal > 0 && new Date().getTime() > endTimeVal;
 
-            // โชว์เฉพาะที่ (ยังไม่ขาย และ ยังไม่หมดเวลา)
             if (!isSold && !isExpired) {
-                allProducts.push(data);
+                allProducts.push(item);
             }
         });
         applyFilters();
@@ -283,14 +275,10 @@ loadProducts();
 // ==========================================
 // D. Auth & User System (ใช้ Service)
 // ==========================================
-function generateRandomCode() { const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'; let result = ''; for (let i = 0; i < 13; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); } return result; }
-
 async function initSystem() { 
     try { 
-        currentIp = await AuthService.getClientIp(); // ใช้ Service
+        currentIp = await AuthService.getClientIp();
     } catch (e) { } 
-    
-    // AuthService.loginAnonymous().catch((error) => console.error("Login Error:", error)); // ใช้ Service
 }
 initSystem();
 
@@ -316,34 +304,22 @@ window.logoutSystem = async function() {
 AuthService.onUserChange(async (user) => {
     if (user) {
         currentUser = user;
-        
-        // จัดการปุ่ม UI ให้ถูกต้องทันที
         const btnLogin = document.getElementById('btnLogin'); 
         const btnLogout = document.getElementById('btnLogout');
         if (btnLogin && btnLogout) {
-            if (user.is_anonymous) { 
-                btnLogin.classList.remove('d-none'); 
-                btnLogout.classList.add('d-none'); 
-            } else { 
-                btnLogin.classList.add('d-none'); 
-                btnLogout.classList.remove('d-none'); 
-            }
+            if (user.is_anonymous) { btnLogin.classList.remove('d-none'); btnLogout.classList.add('d-none'); } 
+            else { btnLogin.classList.add('d-none'); btnLogout.classList.remove('d-none'); }
         }
 
-        // ดึงข้อมูล Guest ใหม่
-        const userSnap = await UserService.getUserProfile(user.id);
+        // ✅ รับ object ตรงๆ หรือ null
+        const userProfile = await UserService.getUserProfile(user.id);
         
-        // 🔍 เช็คของเก่าในเครื่อง
         const savedSecret = localStorage.getItem('my_guest_secret');
-        
-        // ถ้าเป็น Guest และข้อมูลในเครื่องไม่ตรงกับคนปัจจุบัน (แสดงว่าเรา Logout ออกมาแล้วได้ร่างใหม่)
         const isNewIdentity = user.is_anonymous && savedSecret && 
-                             (!userSnap.exists() || userSnap.data()?.secret_code !== savedSecret);
+                             (!userProfile || userProfile.secret_code !== savedSecret); // ✅ เช็ค null แทน .exists()
 
         if (isNewIdentity) {
-            // 🛑 หยุด! เจอเซฟเก่า อย่าเพิ่งใช้ร่างใหม่
             console.log("Found old secret:", savedSecret);
-            
             Swal.fire({
                 title: 'พบข้อมูลเดิมในเครื่อง!',
                 text: 'คุณเคยใช้งานบัญชี Guest ไว้ ต้องการกู้คืนข้อมูลเดิมหรือไม่?',
@@ -355,89 +331,66 @@ AuthService.onUserChange(async (user) => {
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
-                        // ส่งร่างใหม่ (user) ไปสวมรอยเป็นร่างเก่า (savedSecret)
                         const oldName = await UserService.recoverAccount(user, savedSecret);
-                        
-                        // กู้สำเร็จ! อัปเดตรหัสลับในเครื่องให้เป็นรหัสของ User ปัจจุบัน (เพราะย้ายข้อมูลมาแล้ว)
-                        // หมายเหตุ: การ Recover ใน Backend เราย้ายข้อมูลมาหา ID ใหม่ ดังนั้น Secret จะเปลี่ยนตาม ID ใหม่
-                        localStorage.setItem('my_guest_secret', userSnap.data()?.secret_code || savedSecret); // *แก้ Logic Backend ให้ส่ง Secret ใหม่กลับมาจะดีมาก*
-                        
+                        localStorage.setItem('my_guest_secret', userProfile?.secret_code || savedSecret);
                         Swal.fire('ยินดีต้อนรับกลับ', `คุณ ${oldName}`, 'success').then(()=> window.location.reload());
                     } catch (e) {
                         Swal.fire('กู้คืนไม่สำเร็จ', 'ข้อมูลเก่าอาจถูกลบไปแล้ว', 'error');
-                        localStorage.removeItem('my_guest_secret'); // ลบของเสียทิ้ง
+                        localStorage.removeItem('my_guest_secret');
                     }
                 } else {
-                    // เลือกเริ่มใหม่ -> ลบความทรงจำเก่าทิ้ง แล้วจำคนใหม่แทน
                     localStorage.removeItem('my_guest_secret');
-                    // บังคับ Save คนใหม่ทันที
-                    if(userSnap.exists()) localStorage.setItem('my_guest_secret', userSnap.data().secret_code);
+                    if(userProfile) localStorage.setItem('my_guest_secret', userProfile.secret_code);
                     window.location.reload();
                 }
             });
         } 
         
-        // โหลดข้อมูลตามปกติ
-        if (userSnap.exists()) {
-            setupUserProfile(userSnap.data());
-            // Realtime Update Profile
-            UserService.subscribeProfile(user.id, (docSnap) => { 
-                if (docSnap.exists()) setupUserProfile(docSnap.data()); 
+        // ✅ เช็คถ้า userProfile ไม่เป็น null
+        if (userProfile) {
+            setupUserProfile(userProfile);
+            UserService.subscribeProfile(user.id, (updatedProfile) => { 
+                if (updatedProfile) setupUserProfile(updatedProfile); // ✅ รับ object ตรงๆ
             });
         } else {
-             // สร้าง Guest ใหม่ (ถ้ายังไม่มีใน DB)
              setupNewGuestProfile(user);
         }
 
     } else {
-        // ถ้าไม่มี User (เพิ่งเข้าเว็บ) -> Login Guest
         AuthService.loginAnonymous().catch(console.error);
     }
 });
+
 // ฟังก์ชันแยกออกมาเพื่อความสะอาด (สร้าง Profile ใหม่)
 async function setupNewGuestProfile(user) {
-    if (!user || !user.id) return; // 🛡️ กันระเบิดถ้า user ไม่มี
-
+    if (!user || !user.id) return;
     console.log("✅ Guest Profile handled by Database Trigger for:", user.id);
     
-    // Logic การสร้างรหัสลับ (Secret Code) เก็บลงเครื่อง
-    const defaultName = "Guest_" + user.id.slice(0, 4);
-    
-    // ⚠️ เราจะไม่เรียก UserService.createProfile แล้ว เพราะ SQL ทำให้อัตโนมัติ
-    // แต่เราจะ Subscribe รอข้อมูลมาแทน
-    
-    UserService.subscribeProfile(user.id, (docSnap) => { 
-        if (docSnap.exists()) {
-            setupUserProfile(docSnap.data()); 
+    UserService.subscribeProfile(user.id, (updatedProfile) => { 
+        if (updatedProfile) { // ✅ เช็ค object
+            setupUserProfile(updatedProfile); 
         }
     }); 
 }
 
 function setupUserProfile(data) { 
-    // เก็บข้อมูลลง Cache
+    // data คือ object แล้ว ใช้ได้เลย
     userProfileCache = data; 
     isBanned = data.is_banned; 
 
-    // อัปเดตชื่อบน Navbar
     updateUIName(data.username); 
 
-    // ถ้าเปิด Modal โปรไฟล์อยู่ ให้เติมข้อมูลลงฟอร์ม
     if(document.getElementById('profileSecretCode')) { 
         document.getElementById('profileSecretCode').value = data.secret_code || ""; 
         document.getElementById('profileEmail').value = data.contact_email || ""; 
     }
 
-    // ✅ แก้ไขแล้ว: currentuser -> currentUser (ตัว U ใหญ่)
-    // Logic: แอบจด "รหัสลับ" ใส่เครื่องไว้ ถ้าเป็น Guest
     if (currentUser && currentUser.is_anonymous && data.secret_code) {
         const oldSecret = localStorage.getItem('my_guest_secret');
-        
-        // ถ้าไม่มีของเก่า หรือ ของเก่าตรงกับคนปัจจุบัน -> บันทึกได้
         if (!oldSecret || oldSecret === data.secret_code) {
              localStorage.setItem('my_guest_secret', data.secret_code);
         }
     }
-
     // ส่วนจัดการปุ่ม Link Account (ใส่ ? ป้องกัน Error ถ้า providerData เป็น null)
     const isLinked = currentUser?.providerData?.some(p => p.providerId === 'password'); 
     const linkSection = document.getElementById('linkAccountSection'); 
@@ -450,6 +403,7 @@ function setupUserProfile(data) {
     if(isBanned) {
         document.body.innerHTML = "<div class='vh-100 d-flex justify-content-center align-items-center bg-danger'><h1 class='text-white'>🚫 BANNED</h1></div>"; 
     }
+    
 }
 
 function updateUIName(name) { 
@@ -529,16 +483,11 @@ function updateTimerUI(endTimeMs, textId, badgeId, isModal) {
 // F. Modal Logic (ใช้ Service)
 // ==========================================
 window.openAuction = function(id, title, price, img, desc) {
-    // 1. ลองหาข้อมูลสินค้าจาก allProducts ก่อน (กรณีคลิกหน้าแรกแล้วส่งมาแค่ ID)
     const itemFromCache = allProducts.find(p => p.id === id);
-
-    // 2. คำนวณค่าที่ปลอดภัย (ถ้าไม่มีใน argument ให้เอาจาก cache, ถ้าไม่มีอีกให้เอาค่า default)
     const safeTitle = title || itemFromCache?.title || "กำลังโหลด...";
-    // ✅ แก้ปัญหา 404: ถ้าไม่มีรูป ให้ใช้ Placeholder
     const safeImg = img || itemFromCache?.image_url || "https://via.placeholder.com/300?text=No+Image"; 
     const safeDesc = desc || itemFromCache?.description || "";
     
-    // 3. เซ็ตค่าลง Modal (ทำแค่รอบเดียวพอ!)
     currentProductId = id;
     
     document.getElementById('modalTitle').innerText = safeTitle;
@@ -563,13 +512,12 @@ window.openAuction = function(id, title, price, img, desc) {
     if (unsubscribeProduct) unsubscribeProduct();
     if (unsubscribeBids) unsubscribeBids();
 
-    // 🔥 เรียก Service: Subscribe รายละเอียดสินค้า
-    unsubscribeProduct = AuctionService.subscribeAuctionDetail(id, (docSnapshot) => {
-        if (docSnapshot.exists()) {
-            const data = docSnapshot.data();
+    // 🔥 Subscribe สินค้า
+    unsubscribeProduct = AuctionService.subscribeAuctionDetail(id, (data) => {
+        // ✅ data คือ Object หรือ null
+        if (data) {
             currentSellerId = data.seller_id;
 
-            // อัปเดตข้อมูล Realtime ทับอีกทีเมื่อโหลดเสร็จ
             const modalPrice = document.getElementById('modalPrice');
             if (data.current_price !== null && data.current_price !== undefined) {
                 modalPrice.innerText = `฿${data.current_price.toLocaleString()}`;
@@ -581,12 +529,11 @@ window.openAuction = function(id, title, price, img, desc) {
                 modalPrice.innerText = "-";
             }
 
-            // อัปเดตชื่อและรูปอีกครั้ง (เผื่อมีการแก้ไขจากหลังบ้าน)
             document.getElementById('modalTitle').innerText = data.title;
             if(data.image_url) document.getElementById('modalImage').src = data.image_url;
             document.getElementById('modalDesc').innerText = data.description;
 
-            if(data.end_time) currentProductEndTime = new Date(data.end_time).getTime();
+            if(data.end_time) currentProductEndTime = new Date(data.end_time).getTime(); // แปลงเวลา
             
             if(data.contact_email) {
                 document.getElementById('modalEmailLink').href = `mailto:${data.contact_email}`;
@@ -596,12 +543,12 @@ window.openAuction = function(id, title, price, img, desc) {
             const catMap = { 'it': 'ไอที', 'fashion': 'แฟชั่น', 'amulet': 'พระเครื่อง', 'home': 'ของใช้', 'other': 'อื่นๆ' };
             document.getElementById('modalCategoryBadge').innerText = catMap[data.category] || 'สินค้าทั่วไป';
 
-            // Seller Name Logic
+            // Seller Name
             if (data.seller_name) {
                 document.getElementById('modalSellerName').innerText = data.seller_name;
             } else if(data.seller_id) {
-                UserService.getUserProfile(data.seller_id).then(uSnap => {
-                    if(uSnap.exists()) document.getElementById('modalSellerName').innerText = uSnap.data().username;
+                UserService.getUserProfile(data.seller_id).then(uProfile => {
+                    if(uProfile) document.getElementById('modalSellerName').innerText = uProfile.username;
                 });
             }
 
@@ -612,7 +559,7 @@ window.openAuction = function(id, title, price, img, desc) {
                 document.getElementById('modalEditBtn').classList.add('d-none');
             }
 
-            // สถานะ Sold / Buy Now
+            // Sold / Buy Now Status
             if (data.status === 'sold') {
                 document.getElementById('soldBadge').classList.remove('d-none');
                 document.getElementById('soldMsg').classList.remove('d-none');
@@ -629,22 +576,20 @@ window.openAuction = function(id, title, price, img, desc) {
         }
     });
 
-    // 🔥 เรียก Service: Subscribe ประวัติการบิด
-    unsubscribeBids = AuctionService.subscribeBids(id, (snapshot) => {
+    // 🔥 Subscribe Bids (รับ Array ตรงๆ)
+    unsubscribeBids = AuctionService.subscribeBids(id, (bidsArray) => {
         const historyList = document.getElementById('bidHistoryList');
-        if(document.getElementById('bidCount')) document.getElementById('bidCount').innerText = snapshot.size;
+        if(document.getElementById('bidCount')) document.getElementById('bidCount').innerText = bidsArray.length; // ✅ .length
         
         historyList.innerHTML = "";
-        if (snapshot.empty) {
+        if (bidsArray.length === 0) {
             historyList.innerHTML = "<div class='text-center text-secondary small mt-2'>ยังไม่มีข้อเสนอ<br>เป็นคนแรกสิ!</div>";
         } else {
-            snapshot.forEach((doc) => {
-                const bid = doc.data();
-                // แปลง timestamp ของ supabase
+            bidsArray.forEach((bid) => {
+                // ✅ bid คือ Object
                 const bidTime = bid.created_at ? new Date(bid.created_at) : new Date();
                 const timeStr = bidTime.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
                 
-                // หาชื่อคนบิด (ถ้าไม่มีใน bid object ให้หาจาก profile)
                 let bidderName = "Unknown";
                 if (bid.profiles && bid.profiles.username) {
                     bidderName = bid.profiles.username;
@@ -843,20 +788,13 @@ window.openEditModal = async function() {
     bootstrap.Modal.getInstance(document.getElementById('auctionModal')).hide();
     toggleLoading(true);
     
-    // 🔥 เรียก Service: Get Single Auction
-    const docSnap = await AuctionService.getAuctionById(currentProductId);
+    // 🔥 รับ Object ตรงๆ
+    const data = await AuctionService.getAuctionById(currentProductId);
     
-    if(docSnap.exists()) {
-        const data = docSnap.data();
-            // ✅ เพิ่ม: เช็คว่าเป็นเจ้าของไหม
+    if(data) {
         if (currentUser.id !== data.seller_id) {
             toggleLoading(false);
-            return Swal.fire({
-                icon: 'error',
-                title: 'ห้ามแก้ไข',
-                text: 'คุณไม่ใช่เจ้าของสินค้านี้',
-                confirmButtonColor: '#ff6b6b'
-            });
+            return Swal.fire({ icon: 'error', title: 'ห้ามแก้ไข', text: 'คุณไม่ใช่เจ้าของสินค้านี้' });
         }
         document.getElementById('editProductId').value = currentProductId;
         document.getElementById('editTitle').value = data.title;
@@ -866,12 +804,11 @@ window.openEditModal = async function() {
         document.getElementById('editBuyNowPrice').value = data.buy_now_price || "";
         document.getElementById('currentImageUrl').value = data.image_url;
         
-        const safeImageUrl = data.image_url || ""; // ถ้าไม่มีให้เป็นค่าว่าง
+        const safeImageUrl = data.image_url || "";
         document.getElementById('currentImageUrl').value = safeImageUrl;
 
         const imgDisplay = document.getElementById('editCurrentImgDisplay'); 
         if (imgDisplay) {
-            // ถ้า URL ว่าง ให้ใส่รูป Placeholder แทน undefined
             imgDisplay.src = safeImageUrl || 'https://via.placeholder.com/150?text=No+Image';
         }
         document.getElementById('editFile').value = "";
@@ -921,37 +858,25 @@ window.placeBid = async function() {
                     confirmButtonColor: '#ff6b6b'   
                 });
     try {
-        const productSnap = await AuctionService.getAuctionById(currentProductId);
-        if (productSnap.exists()) {
-            const data = productSnap.data();
+        const data = await AuctionService.getAuctionById(currentProductId); // ✅ ได้ object
+        if (data) {
             const now = new Date().getTime();
-            if (data.status === 'sold') 
-                return Swal.fire({
-                    icon: 'error',
-                    title: 'อุ๊ปส์...',
-                    text: 'สินค้านี้ขายแล้ว!',
-                    confirmButtonColor: '#ff6b6b'   
-                });
-            if (data.end_time && now > data.end_time) 
-                return Swal.fire({
-                    icon: 'error',
-                    title: 'อุ๊ปส์...',
-                    text: 'หมดเวลาแล้ว!',
-                    confirmButtonColor: '#ff6b6b'   
-                });
+            const endTime = data.end_time ? new Date(data.end_time).getTime() : 0; // แปลงเวลา
+
+            if (data.status === 'sold') return Swal.fire({ icon: 'error', title: 'อุ๊ปส์...', text: 'สินค้านี้ขายแล้ว!' });
+            if (endTime && now > endTime) return Swal.fire({ icon: 'error', title: 'อุ๊ปส์...', text: 'หมดเวลาแล้ว!' });
             
             const currentP = data.current_price || 0;
             const minIncrement = data.bid_increment || 20;
             let minAllowedPrice = currentP + minIncrement;
             if (currentP === 0) minAllowedPrice = data.current_price;
 
-            if (bidAmount < (currentP + minIncrement)) {
-                return Swal.fire({
-                            icon: 'error',
-                            title: 'อุ๊ปส์...',
-                            text: `ต้องเสนอราคาเพิ่มขึ้นอย่างน้อย ฿${minIncrement.toLocaleString()} (ขั้นต่ำต้องใส่ ฿${(currentP + minIncrement).toLocaleString()})`, 
-                            confirmButtonColor: '#ff6b6b'
-                        });
+            if (Number(document.getElementById('bidInput').value) < minAllowedPrice) {
+                 return Swal.fire({ 
+                    icon: 'error', 
+                    title: 'ราคาต่ำไป', 
+                    text: `ต้องเสนอราคาเพิ่มขึ้นอย่างน้อย ฿${minIncrement.toLocaleString()} (ขั้นต่ำต้องใส่ ฿${(currentP + minIncrement).toLocaleString()})`, 
+                    confirmButtonColor: '#ff6b6b' });
             }
             if (bidAmount <= currentP) 
                 return Swal.fire({
@@ -962,94 +887,95 @@ window.placeBid = async function() {
                         });
 
             const myName = document.getElementById('navUsername').innerText;
-            
-            // 🔥 เรียก Service: Place Bid
             await AuctionService.placeBid(currentProductId, {
-                amount: bidAmount, 
+                amount: Number(document.getElementById('bidInput').value), 
                 bidder_id: currentUser.id, 
                 bidder_name: myName
-            }, data);
-
-            bidInput.value = "";
+            });
+            document.getElementById('bidInput').value = "";
         }
     } catch (error) { Swal.fire({
                         icon: 'error',
                         title: 'อุ๊ปส์...',
                         text: error.message, 
                         confirmButtonColor: '#ff6b6b'
-                    });}
+                    }); }
 }
 
 window.buyNow = async function() {
     if(checkBan()) return;
     if(document.getElementById('navUsername').innerText.includes("Guest (IP ซ้ำ)")) 
         return Swal.fire({
-                    icon: 'error',
-                    title: 'เกิดข้อผิดพลาด',
-                    text: "กรุณากู้คืนบัญชีเดิมก่อน", 
-                    confirmButtonColor: '#ff6b6b'
-                });
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: "กรุณากู้คืนบัญชีเดิมก่อน", 
+            confirmButtonColor: '#ff6b6b'
+        });
     if(currentUser && currentSellerId === currentUser.id) 
-        return  Swal.fire({
-                    icon: 'error',
-                    title: 'อุ๊ปส์...',
-                    text: "คุณซื้อสินค้าตัวเองไม่ได้!", 
-                    confirmButtonColor: '#ff6b6b'
-                });
+        return Swal.fire({
+            icon: 'error',
+            title: 'อุ๊ปส์...',
+            text: "คุณซื้อสินค้าตัวเองไม่ได้!", 
+            confirmButtonColor: '#ff6b6b'
+        });
+
+    // 🛑 แก้ไขตรงนี้: ต้องรอผลลัพธ์จาก Swal ก่อน
     Swal.fire({
         title: 'ยืนยันการซื้อสด ?',
         text: "คุณต้องการซื้อสด ใช่หรือไม่",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#b2bec3', 
-        cancelButtonColor: '#ff6b6b',
-        confirmButtonText: 'ใช่',
-        cancelButtonText: 'ไม่'
-    });
-    try {
-        const productSnap = await AuctionService.getAuctionById(currentProductId);
-        if (productSnap.exists()) {
-            const data = productSnap.data();
-            const currentP = data.current_price || 0;
-            if (data.buy_now_price && currentP >= data.buy_now_price) {
-                return Swal.fire({
+        confirmButtonColor: '#1dd1a1', // ✅ แนะนำให้สีปุ่มตกลงเป็นสีเขียว (User จะได้ไม่งง)
+        cancelButtonColor: '#b2bec3',
+        confirmButtonText: 'ใช่, ซื้อเลย',
+        cancelButtonText: 'ยกเลิก'
+    }).then(async (result) => {
+        // ✅ ถ้ากดตกลง ค่อยทำงานต่อ
+        if (result.isConfirmed) {
+            try {
+                // แสดง Loading ระหว่างรอ
+                Swal.showLoading();
+
+                const data = await AuctionService.getAuctionById(currentProductId);
+                
+                if (data) {
+                    const currentP = data.current_price || 0;
+                    if (data.buy_now_price && currentP >= data.buy_now_price) {
+                        return Swal.fire({ icon: 'error', text: "ราคาประมูลปัจจุบันสูงกว่าราคาขายสดแล้ว" });
+                    }
+                    if (data.status === 'sold') 
+                        return Swal.fire({
+                            icon: 'error',
+                            title: 'อุ๊ปส์...',
+                            text: "เสียใจด้วย มีคนซื้อตัดหน้าไปแล้ว!", 
+                            confirmButtonColor: '#ff6b6b'
+                        });
+                    
+                    const myName = document.getElementById('navUsername').innerText;
+                    await AuctionService.buyNow(currentProductId, {
+                        amount: data.buy_now_price,
+                        winner_id: currentUser.id,
+                        bidder_name: myName
+                    });
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'เรียบร้อย!',
+                        text: ' ซื้อสินค้าสำเร็จ! ยินดีด้วย 🎉🎉',
+                        confirmButtonColor: '#1dd1a1',
+                        confirmButtonText: 'ตกลง'
+                    });
+                }
+            } catch (error) { 
+                Swal.fire({
                     icon: 'error',
                     title: 'อุ๊ปส์...',
-                    text: "ราคาประมูลปัจจุบันสูงกว่าราคาขายสดแล้ว", 
+                    text: error.message,
                     confirmButtonColor: '#ff6b6b'
                 });
             }
-            if (data.status === 'sold') 
-                return Swal.fire({
-                    icon: 'error',
-                    title: 'อุ๊ปส์...',
-                    text: "เสียใจด้วย มีคนซื้อตัดหน้าไปแล้ว!", 
-                    confirmButtonColor: '#ff6b6b'
-                });
-            
-            const myName = document.getElementById('navUsername').innerText;
-            
-            // 🔥 เรียก Service: Buy Now
-            await AuctionService.buyNow(currentProductId, {
-                amount: data.buy_now_price,
-                winner_id: currentUser.id,
-                bidder_name: myName
-            });
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'เรียบร้อย!',
-                text: ' ซื้อสินค้าสำเร็จ! ยินดีด้วย 🎉🎉',
-                confirmButtonColor: '#1dd1a1',
-                confirmButtonText: 'ตกลง'
-            });
         }
-    } catch (error) { Swal.fire({
-                            icon: 'error',
-                            title: 'อุ๊ปส์...',
-                            text: error.message,
-                            confirmButtonColor: '#ff6b6b'
-                        });}
+    });
 }
 
 window.openAddModal = function() {
