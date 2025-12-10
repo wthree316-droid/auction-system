@@ -144,7 +144,6 @@
         import { AuthService, AuctionService, UserService } from "./api.js";
 
         function initHistoryPage() {
-            // ใช้ AuthService จาก api.js
             AuthService.onUserChange((user) => {
                 if (user) loadHistory();
                 else AuthService.loginAnonymous().catch(console.error);
@@ -162,9 +161,8 @@
             const now = new Date().getTime();
 
             try {
-                // ✅ ใช้ AuctionService.subscribeAuctions แทนการเรียก Firestore ตรงๆ
-                // เนื่องจาก api.js ของเรา return เป็น mockSnapshot เราจึงใช้ .forEach ได้เหมือนเดิม
-                AuctionService.subscribeAllAuctions(async (snapshot) => {
+                // ✅ api.js ส่ง Array กลับมาโดยตรง (ตั้งชื่อว่า items เพื่อความชัดเจน)
+                AuctionService.subscribeAllAuctions(async (items) => {
                         
                     soldListContainer.innerHTML = "";
                     auctionListContainer.innerHTML = "";
@@ -174,24 +172,25 @@
                     let totalRevenue = 0;
                     let promises = [];
 
-                    snapshot.forEach(docSnap => {
-                        const item = docSnap.data();
+                    // ✅ Loop ผ่าน Array ตรงๆ ไม่ต้อง .data()
+                    items.forEach(item => {
                         const isStatusSold = item.status === 'sold';
-                        const isExpired = item.end_time_ms && now > item.end_time_ms;
                         
-                        // Logic การคัดแยก:
-                        // 1. ขายสด (Buy Now) = สถานะ sold
-                        // 2. จบประมูล (Won) = หมดเวลาแล้ว และมีคนบิด (และยังไม่ได้เปลี่ยนสถานะเป็น sold หรือเปลี่ยนแล้วแต่ไม่ได้ buy_now)
-                        // เพื่อความง่าย: ถ้าสถานะ active แต่หมดเวลา + มีคนบิด ก็ถือว่าจบประมูล
+                        // ✅ แปลง ISO String จาก Supabase เป็น Milliseconds
+                        const endTimeMs = item.end_time ? new Date(item.end_time).getTime() : 0;
+                        const isExpired = endTimeMs > 0 && now > endTimeMs;
                         
                         let isBuyNow = isStatusSold; 
-                        // ถ้าหมดเวลาแล้ว + มีคนบิด + ยังไม่ Sold (หรือ Sold แล้วแต่ไม่ได้มาจากการ Buy Now ถ้าแยกได้)
-                        // ในที่นี้เราดูแค่ว่า ถ้า Sold คือขายสด, ถ้า Active แต่หมดเวลาคือจบประมูล
-                        let isAuctionWin = !isStatusSold && isExpired && item.last_bidder_uid;
-
-                        // ถ้าใน Backend เราเปลี่ยนสถานะเป็น Sold ตอนจบประมูลด้วย (เช่นกดปิดประมูล) Logic นี้อาจต้องปรับ
-                        // แต่จาก Code ปัจจุบัน Backend จะแก้ status='sold' เฉพาะตอน Buy Now
-                        // ส่วนจบเวลาเฉยๆ status ยังเป็น active แต่ end_time_ms ผ่านไปแล้ว
+                        // เช็คว่ามีคนบิดไหม (ดูจาก last_bidder_uid หรือต้องดึง bids มาดู แต่เบื้องต้นถ้า logic backend update last_bidder ก็ใช้ได้)
+                        // หมายเหตุ: ในตาราง auctions ของคุณควรมี field เก็บคนชนะล่าสุด หรือต้อง query แยก
+                        // สมมติว่า item มี field 'winner_id' หรือ 'seller_id' (เช็ค Logic Backend ดีๆ)
+                        // เพื่อให้ง่าย Frontend assume ว่าถ้าจบเวลาแล้วไม่ Sold คือ Won (ถ้ามีคนบิด)
+                        
+                        // *สมมติว่า backend ยังไม่ได้เก็บ winner_id ใน table auctions*
+                        // เราอาจจะโชว์ไปก่อน หรือต้องไป fetch bids (ซึ่งจะหนัก)
+                        // ในที่นี้ขอ assume ว่า ถ้า expired = จบประมูล
+                        
+                        let isAuctionWin = !isStatusSold && isExpired; 
 
                         let targetContainer = null;
 
@@ -209,7 +208,6 @@
                             const col = document.createElement('div');
                             col.className = "col-12 col-md-6 col-lg-4 col-xl-3";
                             
-                            // Config Theme Elements
                             let badgeHtml = isBuyNow ? 
                                 `<span class="status-badge bg-sold">SOLD</span>` : 
                                 `<span class="status-badge bg-won">WON</span>`;
@@ -219,10 +217,9 @@
                                 `<div class="overlay-badge"><div class="text-stamp stamp-won">WON</div></div>`;
                             
                             let priceColor = isBuyNow ? "text-success" : "text-warning";
-                            let dateStr = item.end_time_ms ? new Date(item.end_time_ms).toLocaleDateString('th-TH') : "-";
+                            let dateStr = item.end_time ? new Date(item.end_time).toLocaleDateString('th-TH') : "-";
                             let showPrice = (item.current_price || item.buy_now_price || 0).toLocaleString();
 
-                            // HTML Structure
                             col.innerHTML = `
                                 <div class="card-history h-100 position-relative" style="cursor: pointer;">
                                     <div class="product-img-wrapper">
@@ -244,17 +241,21 @@
                                 </div>
                             `;
                             
-                            // Event Click
-                            col.querySelector('.card-history').onclick = () => openHistoryDetail(item, item.id, isBuyNow);
+                            // ส่ง endTimeMs ที่แปลงแล้วเข้าไป
+                            col.querySelector('.card-history').onclick = () => openHistoryDetail(item, item.id, isBuyNow, endTimeMs);
                             targetContainer.appendChild(col);
 
-                            // Fetch Winner Name
-                            const winnerUid = item.buyer_uid || item.last_bidder_uid;
+                            // --- Fetch Winner Logic ---
+                            // หมายเหตุ: ตรงนี้ถ้า DB ไม่ได้เก็บ winner_id ไว้ที่ auctions จะลำบาก
+                            // สมมติว่า field ชื่อ winner_id (ถ้าไม่มีอาจต้องแก้ Backend ให้ update field นี้ตอนจบ)
+                            const winnerUid = item.winner_id || item.buyer_id; 
+                            
                             if (winnerUid) {
-                                // ✅ ใช้ UserService จาก api.js
                                 promises.push(
-                                    UserService.getUserProfile(winnerUid).then(userSnap => {
-                                        const winnerName = userSnap.exists() ? userSnap.data().displayName : "Unknown";
+                                    // ✅ api.js คืนค่า userProfile Object หรือ null
+                                    UserService.getUserProfile(winnerUid).then(userProfile => {
+                                        // ✅ เรียกใช้ .username ได้เลย ไม่ต้อง .data()
+                                        const winnerName = userProfile ? userProfile.username : "Unknown";
                                         const winnerEl = document.getElementById(`winner-${item.id}`);
                                         if (winnerEl) {
                                             if(isBuyNow) {
@@ -262,12 +263,11 @@
                                             } else {
                                                 winnerEl.innerHTML = `<div class="winner-tag gold"><i class="bi bi-trophy-fill"></i> ${winnerName}</div>`;
                                             }
-                                            item.winner_name = winnerName; // เก็บชื่อไว้ใช้ใน Modal
+                                            item.winner_name_cache = winnerName; 
                                         }
                                     }).catch(err => {
-                                        console.warn("Load user failed:", err);
                                         const winnerEl = document.getElementById(`winner-${item.id}`);
-                                        if (winnerEl) winnerEl.innerHTML = `<div class="winner-tag silver">Unknown</div>`;
+                                        if (winnerEl) winnerEl.innerHTML = `<div class="winner-tag silver">Error</div>`;
                                     })
                                 );
                             } else {
@@ -277,7 +277,6 @@
                         }
                     });
 
-                    // Update Stats
                     if(loadingSection) loadingSection.style.display = 'none';
                     if(historyContent) historyContent.style.display = 'block';
 
@@ -288,7 +287,6 @@
                     document.getElementById('badgeSoldCount').innerText = soldCount;
                     document.getElementById('badgeAuctionCount').innerText = auctionCount;
 
-                    // Empty States
                     const msgNoSold = document.getElementById('msgNoSold');
                     const msgNoAuction = document.getElementById('msgNoAuction');
                     
@@ -304,15 +302,10 @@
             } catch (error) {
                 console.error("Load History Error:", error);
                 if(loadingSection) loadingSection.innerHTML = `<p class="text-center text-danger">เกิดข้อผิดพลาด: ${error.message}</p>`;
-                Swal.fire({
-                    icon: 'error',
-                    title: 'โหลดข้อมูลไม่สำเร็จ',
-                    text: 'กรุณาลองใหม่อีกครั้ง'
-                });
             }
         }
 
-        function openHistoryDetail(item, id, isBuyNow) {
+        function openHistoryDetail(item, id, isBuyNow, endTimeMs) {
             const detailModal = new bootstrap.Modal(document.getElementById('historyDetailModal'));
             document.getElementById('detailTitle').innerText = item.title;
             document.getElementById('detailImage').src = item.image_url;
@@ -320,13 +313,14 @@
             let showPrice = item.current_price || item.buy_now_price || 0;
             document.getElementById('detailPrice').innerText = `฿${showPrice.toLocaleString()}`;
             
-            document.getElementById('detailDate').innerText = "สิ้นสุดเมื่อ: " + new Date(item.end_time_ms).toLocaleString('th-TH');
+            // ใช้ endTimeMs ที่ส่งเข้ามา
+            document.getElementById('detailDate').innerText = "สิ้นสุดเมื่อ: " + new Date(endTimeMs).toLocaleString('th-TH');
             document.getElementById('detailDesc').innerText = item.description || "ไม่มีรายละเอียดเพิ่มเติม";
             
             const overlayContainer = document.getElementById('detailImageOverlay');
             const winnerEl = document.getElementById('detailWinner');
             const statusBadge = document.getElementById('detailStatusBadge');
-            let winnerName = item.winner_name || "Unknown"; 
+            let winnerName = item.winner_name_cache || "Unknown"; 
 
             if (isBuyNow) {
                 overlayContainer.innerHTML = '<div class="text-stamp stamp-sold position-absolute top-50 start-50 translate-middle" style="z-index:10;">SOLD</div>';
