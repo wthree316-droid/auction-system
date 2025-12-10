@@ -149,8 +149,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         const API_URL = "https://auction-backend-1089558422014.asia-southeast1.run.app";
-        let adminKey = ""; // เก็บ password ที่พิมพ์เข้ามา
-
+        let adminKey = ""; 
         // Login เข้าหน้า Admin (ตอนนี้แค่เช็ค Pass กับ Backend)
         async function checkAdmin() {
             const inputPass = document.getElementById('adminPass').value;
@@ -223,7 +222,7 @@
                                 <div class="rounded-circle bg-light d-flex justify-content-center align-items-center me-3" style="width:40px;height:40px;">
                                     <i class="bi bi-person text-secondary"></i>
                                 </div>
-                                <span class="${isBanned ? 'text-decoration-line-through text-muted' : 'fw-bold text-dark'}">${u.displayName || 'No Name'}</span>
+                                <span class="${isBanned ? 'text-decoration-line-through text-muted' : 'fw-bold text-dark'}">${u.username || 'No Name'}</span>
                             </div>
                         </td>
                         <td class="text-secondary font-monospace small">${u.ip_address || '-'}</td>
