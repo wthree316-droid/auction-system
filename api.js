@@ -2,6 +2,29 @@ import { supabase } from "./supabase-client.js";
 
 const PYTHON_API_URL = "https://auction-backend-1089558422014.asia-southeast1.run.app"; 
 
+// Helper สำหรับยิง API พร้อม Token
+async function fetchWithAuth(url, method, body = null) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("กรุณาเข้าสู่ระบบก่อนทำรายการ");
+
+    const options = {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+        }
+    };
+    if (body) options.body = JSON.stringify(body);
+
+    const response = await fetch(url, options);
+    const result = await response.json();
+
+    if (!response.ok) {
+        throw new Error(result.detail || "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
+    }
+    return result;
+}
+
 // ==========================================
 // 1. Authentication Service
 // ==========================================
@@ -14,7 +37,8 @@ export const AuthService = {
         const { data, error } = await supabase.auth.getSession();
 
         if (data.session) {
-            const { data: userCheck, error: userError } = await supabase.auth.getUser();
+            // เช็คว่า Session ยังใช้ได้จริงไหม
+            const { error: userError } = await supabase.auth.getUser();
             if (userError) {
                 console.warn("🧟 Found Zombie Session. Killing it...", userError.message);
                 await supabase.auth.signOut();
@@ -37,12 +61,7 @@ export const AuthService = {
             password: password
         });
 
-        if (error) {
-            console.error("❌ Login Failed Details:", error);
-            throw error;
-        }
-        
-        // เติม uid ให้เหมือนเดิม
+        if (error) throw error;
         if (data.user) data.user.uid = data.user.id;
         return data.user;
     },
@@ -59,10 +78,7 @@ export const AuthService = {
     },
 
     async linkEmailAccount(user, email, password) {
-        // ... (ส่วนนี้เหมือนเดิม ไม่ได้แก้ Logic ฐานข้อมูล) ...
-        // เพื่อความกระชับ ขอละไว้ (ใช้ code เดิมของคุณตรงนี้ได้เลย)
          console.log("🔗 Linking:", { email });
-
         const { data, error } = await supabase.auth.updateUser({ 
             email: email, 
             password: password 
@@ -70,15 +86,9 @@ export const AuthService = {
 
         if (error) {
             console.error("❌ Link Error Details:", error);
-            if (error.message.includes("different from the old password")) {
-                return { user: user, message: "Already linked" }; 
-            }
-            if (error.message.includes("already been registered")) {
-                throw new Error("อีเมลนี้มีผู้ใช้งานแล้ว (กรุณาใช้อีเมลอื่น)");
-            }
-            if (error.message.includes("Password")) {
-                throw new Error("รหัสผ่านต้องมีความยาว 6 ตัวอักษรขึ้นไป");
-            }
+            if (error.message.includes("different from the old password")) return { user: user, message: "Already linked" }; 
+            if (error.message.includes("already been registered")) throw new Error("อีเมลนี้มีผู้ใช้งานแล้ว");
+            if (error.message.includes("Password")) throw new Error("รหัสผ่านต้องมีความยาว 6 ตัวอักษรขึ้นไป");
             throw error;
         }
         return data;
@@ -90,78 +100,41 @@ export const AuthService = {
 // ==========================================
 export const UserService = {
     async getUserProfile(id) {
-
-        let { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', id)
-            .maybeSingle();
-
-        if (!data) {
-            console.warn("⚠️ Profile missing! Auto-fixing...");
-            const { error: insertError } = await supabase
-                .from('profiles')
-                .insert([{ id: id, username: 'Guest-' + id.slice(0,4) }]); 
-                
-            if (!insertError) {
-                const retry = await supabase.from('profiles').select('*').eq('id', id).single();
-                data = retry.data;
-            }
-        }
-        
-        return data || null; // คืนค่า object หรือ null
+        // ใช้ maybeSingle() ปลอดภัยกว่า
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
+        // ไม่ต้องมี Auto-fix ตรงนี้แล้ว Database Trigger จัดการให้
+        return data || null; 
     },
 
     async updateProfile(id, updateData) {
-        const { error } = await supabase.from('profiles').update(updateData).eq('id', id);
-        if (error) throw error;
+        // 🔒 SECURE: ยิงไปที่ Python Backend แทนการเขียนตรง
+        // เพื่อให้ Backend กรองข้อมูล (เช่น ห้ามแก้ secret_code หรือ สถานะแบน)
+        return await fetchWithAuth(`${PYTHON_API_URL}/users/${id}`, 'PUT', updateData);
     },
 
     subscribeProfile(id, callback) {
-        // เรียกครั้งแรก
         UserService.getUserProfile(id).then(callback);
         
-        // Subscribe Realtime
         const channel = supabase.channel(`profile:${id}`)
             .on('postgres_changes', 
                 { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${id}` }, 
-                (payload) => callback(payload.new) // ✅ ส่ง object ใหม่ไปเลย
+                (payload) => callback(payload.new)
             )
             .subscribe();
     },
 
     async getDashboardData() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error("No session");
-
-        const response = await fetch(`${PYTHON_API_URL}/users/me/dashboard`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        if (!response.ok) throw new Error("Failed to fetch dashboard data");
-        return await response.json();
+        return await fetchWithAuth(`${PYTHON_API_URL}/users/me/dashboard`, 'GET');
     },
 
     async recoverAccount(currentUser, secretCode) {
-        const { data: oldProfile, error } = await supabase
-            .from('profiles')
-            .select('id, username')
-            .eq('secret_code', secretCode)
-            .single();
-
-        if (error || !oldProfile) throw new Error("ไม่พบรหัสลับนี้");
-        if (oldProfile.id === currentUser.id) throw new Error("บัญชีเดียวกัน");
-
-        const { error: rpcError } = await supabase.rpc('migrate_guest_data', {
-            old_user_id: oldProfile.id,
-            new_user_id: currentUser.id
+        // 🔒 SECURE: ยิงไปที่ Python Backend
+        // เพราะ Client ไม่มีสิทธิ์อ่าน Secret Code ของคนอื่นจาก Database โดยตรง
+        const result = await fetchWithAuth(`${PYTHON_API_URL}/users/recover`, 'POST', {
+            current_uid: currentUser.id,
+            secret_code: secretCode
         });
-
-        if (rpcError) throw new Error("กู้คืนล้มเหลว");
-        return oldProfile.username;
+        return result.old_display_name;
     }
 };
 
@@ -171,7 +144,7 @@ export const UserService = {
 export const AuctionService = {
     subscribeAuctions(callback) {
         const fetch = () => supabase.from('auctions').select('*').eq('status', 'active')
-            .then(({ data }) => callback(data || [])); // ✅ ส่ง Array ตรงๆ
+            .then(({ data }) => callback(data || []));
 
         fetch();
         supabase.channel('public:auctions')
@@ -181,7 +154,7 @@ export const AuctionService = {
     
     subscribeAllAuctions(callback) {
         const fetch = () => supabase.from('auctions').select('*').order('created_at', { ascending: false })
-            .then(({ data }) => callback(data || [])); // ✅ ส่ง Array ตรงๆ
+            .then(({ data }) => callback(data || []));
 
         fetch();
         const channel = supabase.channel('public:all_auctions')
@@ -192,12 +165,12 @@ export const AuctionService = {
 
     subscribeAuctionDetail(id, callback) {
         const fetch = () => supabase.from('auctions').select('*').eq('id', id).single()
-            .then(({ data }) => callback(data || null)); // ✅ ส่ง Object หรือ null
+            .then(({ data }) => callback(data || null));
 
         fetch();
         supabase.channel(`auction:${id}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'auctions', filter: `id=eq.${id}` }, 
-                (payload) => callback(payload.new) // ✅ ส่ง Object ใหม่
+                (payload) => callback(payload.new)
             )
             .subscribe();
         return () => {}; 
@@ -205,7 +178,7 @@ export const AuctionService = {
     
     subscribeBids(auctionId, callback) {
         const fetch = () => supabase.from('bids').select('*').eq('auction_id', auctionId).order('created_at', { ascending: false })
-            .then(({ data }) => callback(data || [])); // ✅ ส่ง Array
+            .then(({ data }) => callback(data || []));
             
         fetch();
         supabase.channel(`bids:${auctionId}`)
@@ -214,95 +187,34 @@ export const AuctionService = {
     },
 
     async createAuction(data) {
-        const dbData = {
-            title: data.title,
-            description: data.description,
-            category: data.category,
-            image_url: data.image_url,
-            images: [data.image_url],
-            start_price: data.current_price,
-            current_price: data.current_price,
-            buy_now_price: data.buy_now_price,
-            min_bid_increment: data.bid_increment,
-            contact_email: data.contact_email,
-            status: data.status || 'active',
-            seller_id: data.seller_id,
-            end_time: new Date(data.end_time).toISOString(),
-            start_time: new Date().toISOString(),
-            bid_count: 0,
-            version: 1
-        };
-
-        const { error } = await supabase.from('auctions').insert(dbData);
-        if (error) throw error;
+        // 🔒 SECURE: ส่งไป Backend เพื่อเช็คสิทธิ์และ validate ข้อมูล
+        // Backend จะเป็นคนเติม created_at, seller_id ให้เอง
+        return await fetchWithAuth(`${PYTHON_API_URL}/auctions/`, 'POST', data);
     },
 
     async updateAuction(id, data) {
-        const dbData = {};
-        if (data.title !== undefined) dbData.title = data.title;
-        if (data.description !== undefined) dbData.description = data.description;
-        if (data.category !== undefined) dbData.category = data.category;
-        if (data.image_url !== undefined) {
-            dbData.image_url = data.image_url;
-            dbData.images = [data.image_url];
-        }
-        if (data.buy_now_price !== undefined) dbData.buy_now_price = data.buy_now_price;
-        if (data.contact_email !== undefined) dbData.contact_email = data.contact_email;
-        if (data.end_time) {
-            dbData.end_time = new Date(data.end_time).toISOString();
-        }
-
-        console.log("🚀 Updating Supabase:", dbData);
-        const { error } = await supabase.from('auctions').update(dbData).eq('id', id);
-        if (error) throw error;
+        // 🔒 SECURE: ส่งไป Backend เพื่อเช็คว่าเราเป็นเจ้าของจริงไหม
+        return await fetchWithAuth(`${PYTHON_API_URL}/auctions/${id}`, 'PUT', data);
     },
     
     async getAuctionById(id) {
-         // ✅ คืนค่า Object ตรงๆ หรือ null
          const { data, error } = await supabase.from('auctions').select('*').eq('id', id).single();
          if (error) return null;
          return data;
     },
 
     async placeBid(auctionId, bidData) {
-        // ✅ เพิ่ม Token
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error("กรุณาเข้าสู่ระบบก่อนประมูล");
-
-        const response = await fetch(`${PYTHON_API_URL}/auctions/${auctionId}/bid`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ 
-                amount: bidData.amount, 
-                // bidder_id ไม่ต้องส่งก็ได้
-            })
+        // 🔒 SECURE: ใช้ fetchWithAuth
+        await fetchWithAuth(`${PYTHON_API_URL}/auctions/${auctionId}/bid`, 'POST', { 
+            amount: bidData.amount
         });
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || "Bid Failed");
-        }
     },
     
     async buyNow(auctionId, buyData) {
-        // ✅ เพิ่ม Token
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error("กรุณาเข้าสู่ระบบก่อนซื้อสินค้า");
-
-        const response = await fetch(`${PYTHON_API_URL}/auctions/${auctionId}/buy_now`, {
-             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ 
-                amount: buyData.amount, 
-                // buyer_id ไม่ต้องส่งก็ได้
-            })
+        // 🔒 SECURE: ใช้ fetchWithAuth
+        await fetchWithAuth(`${PYTHON_API_URL}/auctions/${auctionId}/buy_now`, 'POST', { 
+            amount: buyData.amount 
         });
-         if (!response.ok) throw new Error("Buy Now Failed");
     }
 };
 
