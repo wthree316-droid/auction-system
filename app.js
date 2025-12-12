@@ -98,16 +98,16 @@ function renderProducts(products) {
                 <div class="card h-100 cursor-pointer position-relative card-custom" onclick="openAuction('${item.id}')">
                     ${soldOverlay}
                     <div class="product-img-wrapper"> 
-                        <img src="${item.image_url}" class="product-img-list" alt="${safeTitleForAlt}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+                        <img src="${escapeHtml(item.image_url)}" class="product-img-list" alt="${safeTitleForAlt}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                         <div class="position-absolute top-0 start-0 p-2">
                             <span class="badge bg-light text-dark shadow-sm opacity-75">${catName}</span>
                         </div>
                     </div>
                     <div class="card-body p-3">
-                        <h6 class="card-title text-truncate fw-bold mb-1">${item.title}</h6>
+                        <h6 class="card-title text-truncate fw-bold mb-1">${escapeHtml(item.title)}</h6>
                         ${priceDisplayHtml}
                         <div class="d-flex justify-content-between align-items-center mt-2">
-                            <small class="text-secondary text-truncate" style="max-width: 80px;"><i class="bi bi-person"></i> ${sellerName}</small>
+                            <small class="text-secondary text-truncate" style="max-width: 80px;"><i class="bi bi-person"></i> ${escapeHtml(sellerName)}</small>
                             <div class="text-warning small fw-bold">
                                 <i class="bi bi-clock"></i> 
                                 <span id="${timerId}" class="card-timer" data-end-time="${endTime}">--:--</span>
@@ -181,9 +181,9 @@ function renderMySelling(items, container) {
         container.innerHTML += `
             <div class="col-12 col-md-6">
                 <div class="border p-2 rounded bg-white shadow-sm d-flex gap-3 align-items-center" onclick="openAuction('${item.id}', '${item.title}', ${price}, '${item.image_url}', '')" style="cursor:pointer">
-                    <img src="${item.image_url}" style="width:60px; height:60px; object-fit:cover" class="rounded bg-light">
+                    <img src="${escapeHtml(item.image_url)}" style="width:60px; height:60px; object-fit:cover" class="rounded bg-light">
                     <div style="overflow:hidden" class="flex-grow-1">
-                        <div class="text-truncate fw-bold text-dark">${item.title}</div>
+                        <div class="text-truncate fw-bold text-dark">${escapeHtml(item.title)}</div>
                         <div class="d-flex justify-content-between align-items-center mt-1">
                             <span class="text-danger fw-bold">฿${price.toLocaleString()}</span>
                             ${statusBadge}
@@ -228,9 +228,9 @@ function renderMyBidding(list, container) {
         container.innerHTML += `
             <div class="col-12 col-md-6">
                 <div class="border p-2 rounded bg-white shadow-sm d-flex gap-3 align-items-center" onclick="openAuction('${item.id}', '${item.title}', ${currentP}, '${item.image_url}', '')" style="cursor:pointer">
-                    <img src="${item.image_url}" style="width:70px; height:70px; object-fit:cover" class="rounded bg-light">
+                    <img src="${escapeHtml(item.image_url)}" style="width:70px; height:70px; object-fit:cover" class="rounded bg-light">
                     <div style="overflow:hidden" class="flex-grow-1">
-                        <div class="text-truncate fw-bold text-dark mb-1">${item.title}</div>
+                        <div class="text-truncate fw-bold text-dark mb-1">${escapeHtml(item.title)}</div>
                         <div class="d-flex justify-content-between align-items-center">
                             <div><span class="badge ${rankClass}">${rankText}</span></div>
                             <div class="text-end">
@@ -617,6 +617,17 @@ window.openAuction = function(id, title, price, img, desc) {
     new bootstrap.Modal(document.getElementById('auctionModal')).show();
 }
 
+// ฟังก์ชันแปลงตัวอักษรพิเศษให้เป็น Text ธรรมดา (ไม่ให้รันเป็น HTML)
+function escapeHtml(text) {
+    if (!text) return "";
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // ==========================================
 // G. Add & Edit Item (ใช้ Service)
 // ==========================================
@@ -678,25 +689,14 @@ if(addForm) {
                 title: title, 
                 category: document.getElementById('inpCategory').value || "other", 
                 description: document.getElementById('inpDesc').value, 
-                
-                // ราคา
                 current_price: price, 
                 buy_now_price: buyNowPrice,
-                bid_increment: bidIncrement, // ส่งชื่อนี้ไป เดี๋ยว api.js แปลงเป็น min_bid_increment เอง
-                
-                // ข้อมูลติดต่อ
+                bid_increment: bidIncrement,
                 contact_email: email,
-                image_url: imageUrl, 
+                image_url: imageUrl,
                 
-                // ผู้ขาย
-                seller_id: currentUser ? currentUser.id : "guest", 
-                // seller_name ไม่ต้องส่งก็ได้ (เพราะ DB ไม่เก็บ) หรือจะส่งไปแล้วให้ api.js ลบออกก็ได้
-                
-                // เวลา (ส่งเป็น ms ไปเลย ง่ายกว่า)
-                end_time: endTimeMs, // ✅ แก้จาก data.end_time เป็น endTimeMs
-                
-                // start_time ไม่ต้องส่ง เดี๋ยว api.js สร้างเวลาปัจจุบันให้
-                status: 'active'
+                // ✅ แก้: เปลี่ยนชื่อ key เป็น end_time_ms เพื่อให้ Python Backend รับรู้
+                end_time_ms: endTimeMs 
             });
 
             
@@ -760,9 +760,9 @@ if(editForm) {
             image_url: imageUrl, 
             contact_email: document.getElementById('editEmail').value, 
             
-            // ✅ แก้ตรงนี้: เปลี่ยน key เป็น end_time_ms เพื่อให้ api.js รู้ว่าเป็นตัวเลข
-            end_time: endTimeMs
-            });
+            // ✅ แก้: เปลี่ยนเป็น end_time_ms
+            end_time_ms: endTimeMs
+        });
             toggleLoading(false); 
                 Swal.fire({
                     icon: 'success',
@@ -888,9 +888,8 @@ window.placeBid = async function() {
 
             const myName = document.getElementById('navUsername').innerText;
             await AuctionService.placeBid(currentProductId, {
-                amount: Number(document.getElementById('bidInput').value), 
-                bidder_id: currentUser.id, 
-                bidder_name: myName
+                amount: Number(document.getElementById('bidInput').value)
+                // ✅ ลบ bidder_id, bidder_name ออก (Backend รู้เองจาก Token)
             });
             document.getElementById('bidInput').value = "";
         }
@@ -953,9 +952,7 @@ window.buyNow = async function() {
                     
                     const myName = document.getElementById('navUsername').innerText;
                     await AuctionService.buyNow(currentProductId, {
-                        amount: data.buy_now_price,
-                        winner_id: currentUser.id,
-                        bidder_name: myName
+                        amount: 0 // ✅ ใส่ 0 ไปก็ได้ เพราะ Backend จะใช้ราคาจาก Database เอง
                     });
                     
                     Swal.fire({
@@ -1120,20 +1117,17 @@ function checkBan() {
 document.addEventListener("DOMContentLoaded", async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedItemId = urlParams.get('item_id');
-
     if (sharedItemId) {
-        // รอสักนิดให้ระบบโหลดพื้นฐานเสร็จ
         setTimeout(async () => {
-            const docSnap = await AuctionService.getAuctionById(sharedItemId);
-            if (docSnap.exists()) {
-                const item = docSnap.data();
+            // ✅ แก้: รับค่า item มาตรงๆ ไม่ต้อง .exists()
+            const item = await AuctionService.getAuctionById(sharedItemId);
+            if (item) {
                 const price = item.current_price || item.buy_now_price || 0;
-                // เปิด Modal สินค้า
                 openAuction(sharedItemId, item.title, price, item.image_url, item.description);
             }
         }, 1000);
     }
-});        
+});
 
 
 // ฟังก์ชันสำหรับกดปุ่ม "แชร์" ใน Modal สินค้า
@@ -1160,3 +1154,4 @@ window.shareAuction = function() {
         });
     });
 }
+
