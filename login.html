@@ -82,9 +82,11 @@
                 submitBtn.disabled = false;
                 
                 console.error("Login Error:", error);
-
-                // ✅ ใช้ SweetAlert2 แจ้งเตือนสวยๆ
                 let msg = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+                if (error.message && error.message.includes("429")) {
+                    msg = "คุณทำรายการถี่เกินไป กรุณารอ";
+                }
+                // หรือถ้า error object มาเป็น code
                 if(error.code === 'auth/user-not-found') msg = "ไม่พบผู้ใช้งานนี้";
                 if(error.code === 'auth/wrong-password') msg = "รหัสผ่านผิด";
                 if(error.code === 'auth/too-many-requests') msg = "ทำรายการถี่เกินไป กรุณารอสักครู่";
