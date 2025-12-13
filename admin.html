@@ -149,7 +149,17 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         const API_URL = "https://auction-backend-1089558422014.asia-southeast1.run.app";
-        let adminKey = ""; 
+        let adminKey = ""; // เก็บ password ที่พิมพ์เข้ามา
+        function escapeHtml(text) {
+            if (!text) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         // Login เข้าหน้า Admin (ตอนนี้แค่เช็ค Pass กับ Backend)
         async function checkAdmin() {
             const inputPass = document.getElementById('adminPass').value;
@@ -159,7 +169,7 @@
             try {
                 btn.innerHTML = "Checking...";
                 const res = await fetch(`${API_URL}/admin/stats`, {
-                    headers: { "X-Admin-Pass": inputPass }
+                    headers: { "Admin-Pass": inputPass }
                 });
 
                 if (res.ok) {
@@ -190,7 +200,7 @@
         async function apiCall(endpoint, method="GET") {
             const res = await fetch(`${API_URL}${endpoint}`, {
                 method: method,
-                headers: { "X-Admin-Pass": adminKey }
+                headers: { "Admin-Pass": adminKey }
             });
             return await res.json();
         }
@@ -222,7 +232,7 @@
                                 <div class="rounded-circle bg-light d-flex justify-content-center align-items-center me-3" style="width:40px;height:40px;">
                                     <i class="bi bi-person text-secondary"></i>
                                 </div>
-                                <span class="${isBanned ? 'text-decoration-line-through text-muted' : 'fw-bold text-dark'}">${u.username || 'No Name'}</span>
+                                <span class="${isBanned ? 'text-decoration-line-through text-muted' : 'fw-bold text-dark'}">${escapeHtml(u.displayName || 'No Name')}</span>
                             </div>
                         </td>
                         <td class="text-secondary font-monospace small">${u.ip_address || '-'}</td>
@@ -317,9 +327,9 @@
                     <div class="col-md-6 col-lg-4 col-xl-3">
                         <div class="item-card-admin d-flex align-items-center position-relative">
                             ${isSold ? '<span class="badge bg-success position-absolute top-0 start-0 m-2 shadow-sm">SOLD</span>' : ''}
-                            <img src="${item.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:10px;" class="me-3 bg-light shadow-sm" onerror="this.src='https://via.placeholder.com/60'">
+                            <img src="${escapeHtml(item.image_url)}" style="width:60px;height:60px;object-fit:cover;border-radius:10px;" class="me-3 bg-light shadow-sm" onerror="this.src='https://via.placeholder.com/60'">
                             <div class="flex-grow-1 overflow-hidden">
-                                <div class="text-truncate text-dark fw-bold mb-1">${item.title}</div>
+                                <div class="text-truncate text-dark fw-bold mb-1">${escapeHtml(item.title)}</div>
                                 <div class="text-primary fw-bold small">฿${(item.current_price || 0).toLocaleString()}</div>
                             </div>
                             <button class="btn btn-light text-danger rounded-circle shadow-sm" onclick="deleteItem('${item.id}')"><i class="bi bi-trash-fill"></i></button>
