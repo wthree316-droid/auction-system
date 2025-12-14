@@ -104,19 +104,21 @@ function renderProducts(products) {
 
     // สร้างตัวแปรเก็บ HTML ก้อนใหญ่ไว้นอก Loop
     let allCardsHtml = ""; 
-
+    const now = new Date().getTime();
     products.forEach(item => {
         // 1. ตัวแปรที่ไม่ได้ใช้ (safeTitle, safeDesc) ลบทิ้งได้เลยครับ เพราะ onclick เราส่งแค่ ID แล้ว
         
         const timerId = `timer-${item.id}`;
         const endTime = item.end_time ? new Date(item.end_time).getTime() : 0;
-        
+        if (endTime > 0 && now > endTime && item.status !== 'sold') {
+            return; // ข้าม Loop นี้ไปเลย (ไม่แสดงการ์ดนี้)
+        }
         let soldOverlay = item.status === 'sold' ? `<div class="sold-overlay"><div class="sold-text">SOLD</div></div>` : "";
         
         const catMap = { 'it': 'ไอที', 'fashion': 'แฟชั่น', 'amulet': 'พระเครื่อง', 'home': 'ของใช้', 'other': 'อื่นๆ' };
         const catName = catMap[item.category] || 'อื่นๆ';
         const sellerName = item.seller_name || "ผู้ขาย";
-
+        
         // --- Logic แสดงราคา (ปลอดภัยแล้ว) ---
         let priceDisplayHtml = "";
         const currentPrice = item.current_price || 0;
@@ -349,6 +351,7 @@ window.logoutSystem = async function() {
         cancelButtonText: 'ยกเลิก'
     }).then(async (result) => {
         if (result.isConfirmed) {
+            localStorage.removeItem('my_guest_secret');
             await AuthService.logout(); 
             window.location.reload();
         }
@@ -383,42 +386,6 @@ AuthService.onUserChange(async (user) => {
         const isNewIdentity = user.is_anonymous && savedSecret && 
                              (!userSnap.exists() || userSnap.data()?.secret_code !== savedSecret);
 
-        if (isNewIdentity) {
-            // 🛑 หยุด! เจอเซฟเก่า อย่าเพิ่งใช้ร่างใหม่
-            console.log("Found old secret:", savedSecret);
-            
-            Swal.fire({
-                title: 'พบข้อมูลเดิมในเครื่อง!',
-                text: 'คุณเคยใช้งานบัญชี Guest ไว้ ต้องการกู้คืนข้อมูลเดิมหรือไม่?',
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonColor: '#1dd1a1',
-                confirmButtonText: 'ใช่! กู้คืนข้อมูลเดิม',
-                cancelButtonText: 'ไม่ (เริ่มใหม่ทั้งหมด)'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        // ส่งร่างใหม่ (user) ไปสวมรอยเป็นร่างเก่า (savedSecret)
-                        const oldName = await UserService.recoverAccount(user, savedSecret);
-                        
-                        // กู้สำเร็จ! อัปเดตรหัสลับในเครื่องให้เป็นรหัสของ User ปัจจุบัน (เพราะย้ายข้อมูลมาแล้ว)
-                        // หมายเหตุ: การ Recover ใน Backend เราย้ายข้อมูลมาหา ID ใหม่ ดังนั้น Secret จะเปลี่ยนตาม ID ใหม่
-                        localStorage.setItem('my_guest_secret', userSnap.data()?.secret_code || savedSecret); // *แก้ Logic Backend ให้ส่ง Secret ใหม่กลับมาจะดีมาก*
-                        
-                        Swal.fire('ยินดีต้อนรับกลับ', `คุณ ${oldName}`, 'success').then(()=> window.location.reload());
-                    } catch (e) {
-                        Swal.fire('กู้คืนไม่สำเร็จ', 'ข้อมูลเก่าอาจถูกลบไปแล้ว', 'error');
-                        localStorage.removeItem('my_guest_secret'); // ลบของเสียทิ้ง
-                    }
-                } else {
-                    // เลือกเริ่มใหม่ -> ลบความทรงจำเก่าทิ้ง แล้วจำคนใหม่แทน
-                    localStorage.removeItem('my_guest_secret');
-                    // บังคับ Save คนใหม่ทันที
-                    if(userSnap.exists()) localStorage.setItem('my_guest_secret', userSnap.data().secret_code);
-                    window.location.reload();
-                }
-            });
-        } 
         
         // โหลดข้อมูลตามปกติ
         if (userSnap.exists()) {
@@ -515,13 +482,18 @@ setInterval(() => {
         const badgeId = el.id.replace('timer-', 'badge-'); 
         updateTimerUI(endTime, el.id, badgeId, false); 
     }); 
+    
 }, 1000);
 
+// ค้นหาฟังก์ชันเดิมชื่อ updateTimerUI แล้วแทนที่ด้วยอันนี้ครับ
 function updateTimerUI(endTimeMs, textId, badgeId, isModal) { 
     const now = new Date().getTime(); 
     const distance = endTimeMs - now; 
     const textEl = document.getElementById(textId); 
     const badgeEl = document.getElementById(badgeId); 
+    
+    // --- [เพิ่มใหม่] ค้นหาปุ่ม Bid (เฉพาะใน Modal) ---
+    const btnBid = document.querySelector('.btn-bid-superb'); 
     
     if (!textEl) return; 
 
@@ -531,18 +503,22 @@ function updateTimerUI(endTimeMs, textId, badgeId, isModal) {
         
         if(badgeEl) { 
             badgeEl.className = "badge bg-secondary"; 
-            // แก้สีข้อความในการ์ดให้เป็นสีแดงเพื่อเน้น
             if(badgeEl.parentElement.classList.contains('text-warning')) { 
                 badgeEl.parentElement.className = "text-danger small fw-bold"; 
             } 
         } 
         
+        // --- [เพิ่มใหม่] ถ้าหมดเวลา ให้หยุดเต้นและปิดปุ่ม ---
+        if(isModal && btnBid) {
+            btnBid.classList.remove('btn-pulse');
+            btnBid.disabled = true; // แถม: ปิดไม่ให้กดด้วย
+        }
+
         // ถ้าเป็น Modal ให้ซ่อนปุ่มบิด/ซื้อ
         if(isModal) { 
             document.getElementById('bidControlSection').classList.add('d-none'); 
             document.getElementById('buyNowSection').classList.add('d-none'); 
             
-            // ถ้ายังไม่ขึ้น Sold ให้ขึ้นว่าปิดประมูล
             if(document.getElementById('soldBadge').classList.contains('d-none')) { 
                 document.getElementById('auctionEndedMsg').classList.remove('d-none'); 
             } else { 
@@ -562,10 +538,21 @@ function updateTimerUI(endTimeMs, textId, badgeId, isModal) {
         
         textEl.innerText = timeString; 
         
-        // ถ้าเหลือเวลา < 5 นาที ให้กระพริบเตือน (Animation Flash)
-        if(distance < 5 * 60 * 1000 && badgeEl) { 
-            badgeEl.className = "badge bg-danger animate__animated animate__flash"; 
-        } 
+        // เงื่อนไข: ถ้าน้อยกว่า 5 นาที (300,000 ms)
+        if(distance < 5 * 60 * 1000) {
+            // 1. ให้ Badge คำว่า "ใกล้จบ" กระพริบ
+            if(badgeEl) badgeEl.className = "badge bg-danger animate__animated animate__flash"; 
+            
+            // --- [เพิ่มใหม่] 2. สั่งให้ปุ่ม Bid เต้นตึบๆ (เฉพาะใน Modal) ---
+            if(isModal && btnBid) {
+                btnBid.classList.add('btn-pulse');
+            }
+        } else {
+            // ถ้าเวลายังเหลือเยอะ เอา Effect ออก
+            if(isModal && btnBid) {
+                btnBid.classList.remove('btn-pulse');
+            }
+        }
     } 
 }
 // ==========================================
@@ -1250,7 +1237,28 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }, 1000);
     }
-});        
+});   
+
+// เพิ่มในส่วน script
+document.getElementById('inpFile').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    const previewZone = document.getElementById('previewZone');
+    const imgPreview = document.getElementById('imgPreview');
+    const uploadContent = document.querySelector('.upload-content');
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imgPreview.src = e.target.result;
+            previewZone.classList.remove('d-none');
+            // ซ่อนข้อความแนะนำชั่วคราว หรือจะปล่อยไว้ก็ได้
+            uploadContent.classList.add('d-none'); 
+        }
+        reader.readAsDataURL(file);
+    } else {
+        previewZone.classList.add('d-none');
+    }
+});
 
 
 // ฟังก์ชันสำหรับกดปุ่ม "แชร์" ใน Modal สินค้า
