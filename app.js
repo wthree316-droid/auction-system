@@ -14,28 +14,61 @@ let unsubscribeBids = null;
 let currentSellerId = null;
 
 // ==========================================
-// A. ระบบค้นหา & กรอง (UI Logic คงเดิม ไม่ต้องแก้)
+// A. ระบบค้นหา & กรอง (UPDATE รองรับ Header ใหม่)
 // ==========================================
 const searchInput = document.getElementById('searchInput');
+
+// ตัวกรอง Desktop
 const filterCategory = document.getElementById('filterCategory');
 const sortOption = document.getElementById('sortOption');
 
+// ตัวกรอง Mobile (เพิ่มใหม่)
+const mobileFilterCategory = document.getElementById('mobileFilterCategory');
+const mobileSortOption = document.getElementById('mobileSortOption');
+
+// Event Listeners
 if(searchInput) searchInput.addEventListener('input', applyFilters);
-if(filterCategory) filterCategory.addEventListener('change', applyFilters);
-if(sortOption) sortOption.addEventListener('change', applyFilters);
+
+// ผูก Events ทั้ง Desktop และ Mobile
+if(filterCategory) filterCategory.addEventListener('change', () => {
+    // ถ้าแก้ Desktop ให้ซิงค์ไป Mobile ด้วย (เผื่อจอย่อขยาย)
+    if(mobileFilterCategory) mobileFilterCategory.value = filterCategory.value;
+    applyFilters();
+});
+if(sortOption) sortOption.addEventListener('change', () => {
+    if(mobileSortOption) mobileSortOption.value = sortOption.value;
+    applyFilters();
+});
+
+// ผูก Events ฝั่ง Mobile
+if(mobileFilterCategory) mobileFilterCategory.addEventListener('change', () => {
+    if(filterCategory) filterCategory.value = mobileFilterCategory.value; // ซิงค์กลับ Desktop
+    applyFilters();
+});
+if(mobileSortOption) mobileSortOption.addEventListener('change', () => {
+    if(sortOption) sortOption.value = mobileSortOption.value; // ซิงค์กลับ Desktop
+    applyFilters();
+});
 
 function applyFilters() {
     let result = [...allProducts];
-    const keyword = searchInput.value.toLowerCase();
+    
+    // 1. ค้นหาจากชื่อ
+    const keyword = searchInput ? searchInput.value.toLowerCase() : "";
     if (keyword) result = result.filter(p => p.title.toLowerCase().includes(keyword));
     
-    const category = filterCategory.value;
+    // 2. กรองหมวดหมู่ (อ่านจาก Desktop เป็นหลัก เพราะเราซิงค์ค่ากันแล้ว)
+    const category = filterCategory ? filterCategory.value : 'all';
     if (category && category !== 'all') result = result.filter(p => p.category === category);
     
-    const sortBy = sortOption.value;
-    if (sortBy === 'newest') result.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
-    else if (sortBy === 'ending_soon') {
+    // 3. เรียงลำดับ (อ่านจาก Desktop เป็นหลัก)
+    const sortBy = sortOption ? sortOption.value : 'newest';
+    
+    if (sortBy === 'newest') {
+        result.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+    } else if (sortBy === 'ending_soon') {
         const now = new Date().getTime();
+        // เอาเฉพาะที่ยังไม่จบมาเรียงก่อน (หรือเรียงตามเวลาที่เหลือ)
         result.sort((a, b) => (a.end_time - now) - (b.end_time - now));
     } else if (sortBy === 'price_asc') {
         result.sort((a, b) => (a.current_price || a.buy_now_price || 0) - (b.current_price || b.buy_now_price || 0));
