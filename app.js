@@ -87,9 +87,17 @@ function renderProducts(products) {
     
     if(products.length === 0) {
         listContainer.innerHTML = `
-            <div class="col-12 text-center py-5 text-secondary opacity-50">
-                <i class="bi bi-inbox display-1"></i>
-                <p class="mt-3">ไม่พบสินค้าตามเงื่อนไข</p>
+            <div class="col-12 text-center py-5">
+                <div class="mb-4">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+                        <i class="bi bi-inbox-fill text-secondary opacity-25" style="font-size: 4rem;"></i>
+                    </div>
+                </div>
+                <h4 class="text-dark fw-bold">ยังไม่มีสินค้าในขณะนี้</h4>
+                <p class="text-secondary mb-4">มาเป็นคนแรกที่ลงขายสินค้ากันเถอะ!</p>
+                <button class="btn btn-gradient-add px-4 py-2 shadow-sm mx-auto" onclick="openAddModal()">
+                    <i class="bi bi-plus-lg"></i> ลงขายสินค้าชิ้นแรก
+                </button>
             </div>`;
         return;
     }
