@@ -366,7 +366,6 @@ input[type="datetime-local"]::after {
 
 /* Modal Responsive Fixes */
 @media (max-width: 991.98px) {
-    .modal-body .row { flex-direction: column; }
     .modal-image-col { height: 350px; min-height: auto !important; }
     .modal-info-col { border-top: 1px solid #eee; }
 }
