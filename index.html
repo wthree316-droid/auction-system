@@ -174,6 +174,27 @@
             </div>
         </div>
     </nav>
+    <header class="container-fluid px-3 px-lg-5 mt-4 mb-5">
+        <div class="rounded-5 p-4 p-lg-5 text-white overflow-hidden position-relative shadow-lg" 
+            style="background: linear-gradient(120deg, var(--primary-color), var(--secondary-color)); min-height: 300px; display: flex; align-items: center;">
+            
+            <div class="position-absolute top-0 start-0 w-100 h-100" style="background-image: radial-gradient(circle, rgba(255,255,255,0.2) 2px, transparent 3px); background-size: 30px 30px; opacity: 0.5;"></div>
+            
+            <div class="row align-items-center position-relative z-1 w-100">
+                <div class="col-lg-7">
+                    <span class="badge bg-white text-danger fw-bold px-3 py-2 rounded-pill mb-3 shadow-sm">🔥 Hot Auction</span>
+                    <h1 class="display-4 fw-bold mb-3" style="font-family: 'Fredoka', sans-serif;">ประมูลสินค้า<br>ในราคาทีคุณกำหนดเอง</h1>
+                    <p class="fs-5 opacity-75 mb-4">แหล่งรวมสินค้าไอที แฟชั่น และของสะสม เริ่มต้นที่ 0 บาท<br>ปลอดภัย มั่นใจ ด้วยระบบ Verified Seller</p>
+                    <button class="btn btn-light text-primary fw-bold rounded-pill px-4 py-2 shadow-sm" onclick="document.getElementById('productList').scrollIntoView({behavior: 'smooth'})">
+                        เริ่มประมูลเลย <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+                <div class="col-lg-5 d-none d-lg-block text-center">
+                    <i class="bi bi-gift-fill text-white opacity-50" style="font-size: 10rem; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));"></i>
+                </div>
+            </div>
+        </div>
+    </header>
     
     <div class="container-fluid px-3 px-lg-5 pb-5 mt-4">
         <div class="row g-4" id="productList">
@@ -278,45 +299,83 @@
                             </div>
 
                             <div class="scrollable-content p-4 custom-scrollbar">
-                                <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded-3 bg-light border">
-                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;"><i class="bi bi-person-fill fs-4 text-white"></i></div>
-                                    <div class="flex-grow-1 overflow-hidden">
-                                        <div class="text-secondary small text-uppercase fw-bold">ผู้ขาย</div>
-                                        <div class="fw-bold text-dark text-truncate" id="modalSellerName">Unknown</div>
+                                <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded-4 seller-card-superb position-relative">
+                                    <div class="position-relative">
+                                        <div class="avatar-ring-superb">
+                                            <div class="bg-white rounded-circle d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                                                <i class="bi bi-person-fill fs-3 text-secondary"></i>
+                                            </div>
+                                        </div>
+                                        <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle p-1" style="width: 16px; height: 16px; padding: 0;"></span>
                                     </div>
+                                    
+                                    <div class="flex-grow-1 overflow-hidden lh-sm">
+                                        <div class="text-muted d-flex align-items-center gap-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                            VERIFIED SELLER <i class="bi bi-patch-check-fill text-primary"></i>
+                                        </div>
+                                        <div class="fw-bold text-dark fs-5 text-truncate" id="modalSellerName">Unknown</div>
+                                    </div>
+
                                     <div class="d-flex gap-2">
-                                        <a id="modalEmailLink" href="#" class="btn btn-outline-secondary btn-sm rounded-circle d-none"><i class="bi bi-envelope-fill"></i></a>
-                                        <button id="modalEditBtn" class="btn btn-warning btn-sm rounded-pill px-3 d-none fw-bold" onclick="openEditModal()">แก้ไข</button>
+                                        <a id="modalEmailLink" href="#" class="btn btn-light btn-icon-hover rounded-circle shadow-sm border-0 d-none" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="bi bi-envelope-fill text-primary"></i>
+                                        </a>
+                                        <button id="modalEditBtn" class="btn btn-warning-soft rounded-pill px-3 fw-bold d-none" onclick="openEditModal()">
+                                            <i class="bi bi-pencil-square me-1"></i> แก้ไข
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="mb-4">
-                                    <h6 class="text-secondary text-uppercase small fw-bold mb-2 border-bottom pb-2">รายละเอียดสินค้า</h6>
-                                    <p id="modalDesc" class="text-dark small" style="white-space: pre-line; line-height: 1.6;">...</p>
+
+                                <div class="mb-4 ps-2 border-start border-4 border-danger border-opacity-50">
+                                    <h6 class="text-secondary text-uppercase small fw-bold mb-2 ps-1">รายละเอียดสินค้า</h6>
+                                    <p id="modalDesc" class="text-dark opacity-75 ps-1" style="white-space: pre-line; line-height: 1.7; font-size: 0.95rem;">...</p>
                                 </div>
-                                <div>
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h6 class="text-secondary text-uppercase small fw-bold mb-0">ประวัติการเสนอราคา</h6>
-                                        <span id="bidCount" class="badge bg-secondary rounded-pill">0</span>
+
+                                <div class="mt-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="text-dark fw-bold mb-0 d-flex align-items-center gap-2">
+                                            <i class="bi bi-clock-history text-secondary"></i> ประวัติการเสนอราคา
+                                        </h6>
+                                        <span id="bidCount" class="badge bg-dark-subtle text-dark rounded-pill px-3">0 Bids</span>
                                     </div>
-                                    <div id="bidHistoryList" class="d-flex flex-column gap-2 p-2 bg-light rounded border" style="min-height: 100px;">
-                                        <div class="text-center small text-secondary py-3">กำลังโหลด...</div>
+                                    
+                                    <div id="bidHistoryList" class="d-flex flex-column gap-2 custom-history-box">
+                                        <div class="text-center small text-secondary py-4 bg-light rounded-4 border border-dashed">
+                                            <i class="bi bi-inbox fs-4 d-block mb-1 opacity-50"></i>
+                                            กำลังโหลดข้อมูล...
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="p-3 bg-light border-top mt-auto">
-                                <div id="buyNowSection" class="mb-2 d-none">
-                                    <button class="btn btn-outline-success w-100 py-2 rounded-pill d-flex justify-content-between align-items-center" onclick="buyNow()">
-                                        <span class="fw-bold"><i class="bi bi-lightning-fill"></i> ซื้อสดทันที</span><span class="fw-bold fs-5" id="buyNowPriceDisplay">฿0</span>
+
+                            <div class="p-4 bg-white border-top mt-auto shadow-lg-top z-3 position-relative"> 
+                                <div id="buyNowSection" class="mb-3 d-none">
+                                    <button class="btn btn-buy-now-superb w-100 py-3 rounded-pill d-flex justify-content-between align-items-center shadow-sm" onclick="buyNow()">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="icon-circle bg-white text-success"><i class="bi bi-lightning-fill"></i></div>
+                                            <span class="fw-bold">ซื้อสดทันที</span>
+                                        </div>
+                                        <span class="fw-bold fs-5" id="buyNowPriceDisplay">฿0</span>
                                     </button>
                                 </div>
+
                                 <div id="bidControlSection">
-                                    <div id="auctionEndedMsg" class="alert alert-secondary text-center py-2 mb-0 d-none small fw-bold">ปิดประมูลแล้ว</div>
-                                    <div id="soldMsg" class="alert alert-success text-center py-2 mb-0 d-none small fw-bold">ขายแล้ว!</div>
-                                    <div class="input-group input-group-lg mt-2 shadow-sm">
-                                        <span class="input-group-text bg-white border-end-0 text-secondary">฿</span>
-                                        <input type="number" class="form-control bg-white text-dark border-start-0 fw-bold" placeholder="ราคาของคุณ..." id="bidInput">
-                                        <button class="btn btn-main px-4 fw-bold" onclick="placeBid()">ส่งราคา</button>
+                                    <div id="auctionEndedMsg" class="alert alert-secondary text-center py-2 mb-0 d-none rounded-pill fw-bold border-0 bg-gray-200 text-gray-600">
+                                        <i class="bi bi-stop-circle me-1"></i> ปิดประมูลแล้ว
+                                    </div>
+                                    <div id="soldMsg" class="alert alert-success text-center py-2 mb-0 d-none rounded-pill fw-bold border-0 bg-success-subtle text-success">
+                                        <i class="bi bi-check-circle me-1"></i> ขายแล้ว!
+                                    </div>
+
+                                    <div class="bid-input-wrapper mt-2 position-relative">
+                                        <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden border">
+                                            <span class="input-group-text bg-white border-0 ps-4 text-secondary fw-bold">฿</span>
+                                            <input type="number" class="form-control bg-white text-dark border-0 fw-bold fs-5" placeholder="ระบุราคา..." id="bidInput">
+                                            <button class="btn btn-bid-superb px-4 fw-bold" onclick="placeBid()">
+                                                ส่งราคา <i class="bi bi-send-fill ms-1"></i>
+                                            </button>
+                                        </div>
+                                        <div class="bid-glow-effect"></div>
                                     </div>
                                 </div>
                             </div>
@@ -412,6 +471,51 @@
             </div>
         </div>
     </div>
+
+    <footer class="bg-white border-top mt-auto pt-5 pb-3">
+        <div class="container px-lg-5">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <a class="d-flex align-items-center gap-2 text-decoration-none mb-3" href="#">
+                        <div class="brand-logo-box" style="transform: scale(0.8);">
+                            <i class="bi bi-hammer text-white"></i>
+                        </div>
+                        <span class="fs-4 fw-bold text-dark" style="font-family: 'Fredoka';">Auction<span class="text-gradient">WEI</span></span>
+                    </a>
+                    <p class="text-muted small">แพลตฟอร์มประมูลออนไลน์ที่ทันสมัยที่สุด ปลอดภัย ใช้งานง่าย รองรับทุกอุปกรณ์</p>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <h6 class="fw-bold mb-3">เมนู</h6>
+                    <ul class="list-unstyled small text-secondary d-flex flex-column gap-2">
+                        <li><a href="#" class="text-decoration-none text-muted">หน้าแรก</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">สินค้าใหม่</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">ลงขายสินค้า</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <h6 class="fw-bold mb-3">ช่วยเหลือ</h6>
+                    <ul class="list-unstyled small text-secondary d-flex flex-column gap-2">
+                        <li><a href="#" class="text-decoration-none text-muted">แจ้งปัญหา</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">กฎการใช้งาน</a></li>
+                        <li><a href="#" class="text-decoration-none text-muted">ติดต่อเรา</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="fw-bold mb-3">ติดตามเรา</h6>
+                    <div class="d-flex gap-2">
+                        <a href="#" class="btn btn-light rounded-circle shadow-sm"><i class="bi bi-facebook text-primary"></i></a>
+                        <a href="#" class="btn btn-light rounded-circle shadow-sm"><i class="bi bi-line text-success"></i></a>
+                        <a href="#" class="btn btn-light rounded-circle shadow-sm"><i class="bi bi-instagram text-danger"></i></a>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4 opacity-25">
+            <div class="text-center small text-muted">
+                © 2025 AuctionWEI. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="module" src="app.js"></script>
