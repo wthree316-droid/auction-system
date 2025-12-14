@@ -27,76 +27,149 @@
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-xl navbar-light navbar-glass sticky-top py-3">
+    <nav class="navbar navbar-expand-md navbar-light fixed-top navbar-superb">
         <div class="container-fluid px-3 px-lg-5">
-            <a class="navbar-brand d-flex align-items-center gap-2 me-4" href="#">
-                <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 45px; height: 45px; background: linear-gradient(145deg, #ffffff, #f0f0f0);">
-                    <i class="bi bi-hammer text-danger fs-4"></i>
+            
+            <a class="navbar-brand d-flex align-items-center gap-2 me-xl-5" href="index.html">
+                <div class="brand-logo-box">
+                    <i class="bi bi-hammer text-white"></i>
                 </div>
-                <span class="fw-bold fs-3" style="color: var(--text-color);">Auction<span style="color: var(--primary-color);">X</span></span>
+                <div class="d-flex flex-column lh-1">
+                    <span class="brand-text">Auction<span class="text-gradient">WEI</span></span>
+                    <span class="brand-slogan">The Premium Auction</span>
+                </div>
             </a>
 
-            <button class="navbar-toggler border-0 shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-                <span class="navbar-toggler-icon"></span>
+            <button class="navbar-toggler border-0 p-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <div class="hamburger-icon">
+                    <span></span><span></span><span></span>
+                </div>
             </button>
 
             <div class="collapse navbar-collapse mt-3 mt-xl-0" id="navbarContent">
-                <div class="search-container mb-3 mb-xl-0">
-            
-                    <div class="search-box">
-                        <div class="input-group input-group-custom">
-                            <span class="input-group-text bg-transparent border-0 text-danger ps-3"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control border-0 bg-transparent shadow-none" id="searchInput" placeholder="ค้นหาสินค้าที่ชอบ...">
+                
+                <div class="mx-auto w-100 search-wrapper-superb my-3 my-xl-0">
+                    <div class="input-group search-group-superb">
+                        <span class="input-group-text bg-transparent border-0 ps-3 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control border-0 shadow-none bg-transparent" id="searchInput" placeholder="ค้นหาสินค้าที่คุณต้องการ...">
+                        
+                        <button class="btn btn-filter-toggle d-none d-md-block" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-sliders2"></i> ตัวกรอง
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end p-3 shadow-lg border-0 rounded-4 mt-2" style="min-width: 300px;">
+                            <h6 class="dropdown-header text-uppercase fw-bold text-secondary mb-2">ตั้งค่าการค้นหา</h6>
+                            <div class="mb-3">
+                                <label class="small text-muted mb-1">หมวดหมู่</label>
+                                <select class="form-select form-select-sm rounded-pill bg-light border-0" id="filterCategory">
+                                    <option value="all">📂 ทุกหมวดหมู่</option>
+                                    <option value="it">📱 ไอที/Gadget</option>
+                                    <option value="fashion">👕 แฟชั่น</option>
+                                    <option value="amulet">🙏 พระเครื่อง</option>
+                                    <option value="home">🏠 ของแต่งบ้าน</option>
+                                    <option value="other">📦 อื่นๆ</option>
+                                </select>
+                            </div>
+                            <div class="mb-0">
+                                <label class="small text-muted mb-1">เรียงตาม</label>
+                                <select class="form-select form-select-sm rounded-pill bg-light border-0" id="sortOption">
+                                    <option value="newest">🕒 ใหม่ล่าสุด</option>
+                                    <option value="ending_soon">🔥 ใกล้จบ</option>
+                                    <option value="price_asc">💰 ราคา: ต่ำ ➜ สูง</option>
+                                    <option value="price_desc">💎 ราคา: สูง ➜ ต่ำ</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="filter-group">
-                        <select class="form-select form-select-custom" id="filterCategory">
-                            <option value="all">📂 ทุกหมวดหมู่</option>
+                    
+                    <div class="d-md-none mt-2 d-flex gap-2">
+                        <select class="form-select form-select-sm rounded-pill" id="mobileFilterCategory">
+                            <option value="all">📂 หมวดหมู่</option>
                             <option value="it">📱 ไอที/Gadget</option>
                             <option value="fashion">👕 แฟชั่น</option>
                             <option value="amulet">🙏 พระเครื่อง</option>
                             <option value="home">🏠 ของแต่งบ้าน</option>
                             <option value="other">📦 อื่นๆ</option>
                         </select>
-                        <select class="form-select form-select-custom" id="sortOption">
-                            <option value="newest">🕒 ใหม่ล่าสุด</option>
+                        <select class="form-select form-select-sm rounded-pill" id="mobileSortOption">
+                            <option value="newest">🕒 ล่าสุด</option>
                             <option value="ending_soon">🔥 ใกล้จบ</option>
                             <option value="price_asc">💰 ราคา: ต่ำ ➜ สูง</option>
                             <option value="price_desc">💎 ราคา: สูง ➜ ต่ำ</option>
                         </select>
                     </div>
                 </div>
-            </div>    
-        </div>
-    </nav>
-    <nav class="navbar navbar-expand-xl navbar-light navbar-glass sticky-top py-3">
-        <div class="container-fluid px-3 px-lg-5 justify-content-center align-items-center">
-            <div class="d-flex gap-3 align-items-center flex-wrap justify-content-center justify-content-xl-end">
-                <button class="btn-superb btn-superb-dash" onclick="openDashboardModal()">
-                    <i class="bi bi-grid-fill"></i>
-                    <span>ของฉัน</span>
-                </button>
-                <button class="btn-superb btn-superb-recover" onclick="openRecoverModal()">
-                    <i class="bi bi-phone-vibrate"></i>
-                    <span>ย้ายเครื่อง</span>
-                </button>                    
-                <div class="d-flex gap-2">
-                    <button class="btn btn-main d-flex align-items-center gap-2" onclick="openAddModal()">
-                        <i class="bi bi-plus-circle-fill"></i> <span>ลงขาย</span>
-                    </button>
-                    <a href="history.html" class="btn btn-gold d-flex align-items-center gap-2">
-                        <i class="bi bi-clock-history"></i> <span>ประวัติ</span>
-                    </a>
-                </div>
-                <div class="d-flex gap-2 align-items-center bg-white shadow-sm px-3 py-1 rounded-pill border border-light">
-                    <button class="btn btn-sm btn-link text-decoration-none text-dark fw-bold d-flex align-items-center gap-2" onclick="openProfileModal()">
-                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;"><i class="bi bi-person-fill text-secondary"></i></div>
-                        <span id="navUsername" class="small text-truncate" style="max-width: 80px;">Guest</span>
-                    </button>
-                    <div class="vr mx-1"></div>
-                    <a id="btnLogin" href="login.html" class="btn btn-sm text-success fw-bold d-none">Login</a>
-                    <button id="btnLogout" onclick="logoutSystem()" class="btn btn-sm text-danger rounded-circle d-none border-0"><i class="bi bi-box-arrow-right"></i></button>
+
+                <div class="d-flex flex-column flex-md-row align-items-xl-center gap-3 ms-xl-4">
+
+                    
+
+                    <div class="d-flex align-items-center justify-content-between gap-1">
+                        <button class="btn-gradient-add shadow-sm" style="min-width: 120px;" onclick="openAddModal()">
+                            <i class="bi bi-plus-lg"></i> <span>ลงขาย</span>
+                        </button>
+
+                        <div class="vr d-none d-md-block mx-1" 
+                            style="height: 50px; width: 5px; background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color)); opacity: 0.8; border-radius: 2px;">
+                        </div>
+
+                        <div class="dropdown">
+                            <button class="btn btn-profile-superb d-flex align-items-center gap-2 p-1 pe-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="avatar-box">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div class="d-flex flex-column align-items-start lh-1 d-md-block" style="min-width: 140px;">
+                                    <span class="small fw-bold text-dark" id="navUsername">Guest</span>
+                                    <span class="xs-text text-muted">Member</span>
+                                </div>
+                            </button>
+
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-2 mt-1" style="min-width: 240px;">
+                                <li>
+                                    <button class="dropdown-item rounded-pill py-2 mb-1 d-flex align-items-center gap-2" onclick="openProfileModal()">
+                                        <div class="bg-light rounded-circle p-1"><i class="bi bi-person-gear text-dark"></i></div>
+                                        <span class="fw-bold text-dark">ตั้งค่าโปรไฟล์</span>
+                                    </button>
+                                </li>
+
+                                <li><hr class="dropdown-divider opacity-25 my-1"></li>
+
+                                <li>
+                                    <button class="dropdown-item rounded-pill py-2 mb-1 d-flex align-items-center gap-2" onclick="openDashboardModal()">
+                                        <div class="bg-danger-subtle rounded-circle p-1"><i class="bi bi-grid-fill text-danger"></i></div>
+                                        <span>แดชบอร์ดของฉัน</span>
+                                    </button>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item rounded-pill py-2 mb-1 d-flex align-items-center gap-2 text-decoration-none text-dark" href="history.html">
+                                        <div class="bg-info-subtle rounded-circle p-1"><i class="bi bi-clock-history text-info"></i></div>
+                                        <span>ประวัติการประมูล</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item rounded-pill py-2 mb-1 d-flex align-items-center gap-2" onclick="openRecoverModal()">
+                                        <div class="bg-warning-subtle rounded-circle p-1"><i class="bi bi-phone-vibrate text-warning"></i></div>
+                                        <span>ย้ายเครื่อง</span>
+                                    </button>
+                                </li>
+
+                                <li><hr class="dropdown-divider opacity-25 my-1"></li>
+
+                                <li>
+                                    <a id="btnLogin" class="dropdown-item rounded-pill py-2 d-flex align-items-center gap-2 text-primary fw-bold" href="login.html">
+                                        <div class="bg-primary-subtle rounded-circle p-1"><i class="bi bi-box-arrow-in-right text-primary"></i></div>
+                                        <span>เข้าสู่ระบบ</span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <button id="btnLogout" class="dropdown-item rounded-pill py-2 d-flex align-items-center gap-2 text-danger fw-bold d-none" onclick="logoutSystem()">
+                                        <div class="bg-danger-subtle rounded-circle p-1"><i class="bi bi-power text-danger"></i></div>
+                                        <span>ออกจากระบบ</span>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -195,7 +268,7 @@
                                     <div>
                                         <small class="text-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">ราคาปัจจุบัน</small>
                                         <span class="fw-bold text-danger display-5" id="modalPrice">฿0</span>
-                                        <small class="d-block text-warning" id="modalMinStep">(ขั้นต่ำ +฿1)</small>
+                                        <small class="d-block text-warning" id="modalMinStep">(ขั้นต่ำ +฿20)</small>
                                     </div>
                                     <div class="text-end">
                                         <small class="text-secondary d-block text-uppercase fw-bold" style="font-size: 0.7rem;">เหลือเวลา</small>
