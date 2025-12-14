@@ -226,33 +226,117 @@
         </div>
     </div>
 
-    <div class="modal fade" id="addItemModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white border-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-bag-plus-fill"></i> ลงขายสินค้าใหม่</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 overflow-hidden shadow-hover rounded-4">
+                
+                <div class="modal-header modal-header-superb border-0 pb-0">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-white rounded-circle p-2 shadow-sm text-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-bag-plus-fill fs-3 text-gradient"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-dark">ลงขายสินค้า</h5>
+                            <p class="mb-0 text-muted small">กรอกรายละเอียดสินค้าของคุณให้ครบถ้วน</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close bg-white shadow-sm rounded-circle p-2 opacity-100" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
+
+                <div class="modal-body p-4 pt-4">
                     <form id="addItemForm">
-                        <div class="row g-3">
-                            <div class="col-md-8"><label class="form-label text-secondary small">ชื่อสินค้า</label><input type="text" class="form-control" id="inpTitle" required></div>
-                            <div class="col-md-4"><label class="form-label text-secondary small">หมวดหมู่</label><select class="form-select" id="inpCategory" ><option value="">เลือก...</option><option value="it">📱 ไอที</option><option value="fashion">👕 แฟชั่น</option><option value="amulet">🙏 พระเครื่อง</option><option value="home">🏠 ของใช้</option><option value="other">📦 อื่นๆ</option></select></div>
-                            <div class="col-12"><label class="form-label text-secondary small">รายละเอียด</label><textarea class="form-control" id="inpDesc" rows="3"></textarea></div>
-                            <div class="col-md-6"><label class="form-label text-secondary small">ราคาเริ่มต้น</label><input type="number" class="form-control" id="inpPrice"></div>
-                            <div class="col-md-4"><label class="form-label text-warning small">ขั้นต่ำการประมูล</label><input type="number" class="form-control border-warning" id="inpBidIncrement" value="20"></div>
-                            <div class="col-md-6"><label class="form-label text-success small fw-bold">ราคาขายสด</label><input type="number" class="form-control border-success" id="inpBuyNowPrice"></div>
-                            <div class="col-md-12"><label class="form-label text-danger small">ปิดประมูลวันที่</label><input type="datetime-local" class="form-control" id="inpEndTime" required></div>
-                            <div class="col-12"><label class="form-label text-secondary small">รูปภาพ</label><input type="file" class="form-control" id="inpFile" accept="image/*" required></div>
-                            
-                            <div class="col-12">
-                                <div class="bg-light p-3 rounded border">
-                                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="chkProfileEmail" onchange="toggleContactInput('chkProfileEmail', 'inpEmail', 'contact_email')"><label class="form-check-label text-secondary" for="chkProfileEmail">ใช้อีเมลจากโปรไฟล์</label></div>
-                                    <input type="email" class="form-control mt-2" id="inpEmail" required>
+                        <div class="row g-3"> <div class="col-12">
+                                <label class="form-label fw-bold text-secondary small text-uppercase">รูปภาพสินค้า</label>
+                                <div class="upload-zone-superb position-relative text-center p-3 rounded-4 border-2 border-dashed">
+                                    <input type="file" class="form-control position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" id="inpFile" accept="image/*" required>
+                                    <div class="upload-content pointer-events-none py-2">
+                                        <div class="text-primary bg-primary-subtle rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 45px; height: 45px;">
+                                            <i class="bi bi-cloud-arrow-up-fill fs-4"></i>
+                                        </div>
+                                        <h6 class="fw-bold text-dark mb-0 fs-6">คลิกเพื่ออัปโหลด</h6>
+                                    </div>
+                                    <div id="previewZone" class="d-none mt-2">
+                                        <img id="imgPreview" src="" class="rounded-3 shadow-sm border" style="max-height: 120px; object-fit: contain;">
+                                    </div>
                                 </div>
                             </div>
+
+                            <div class="col-12 col-md-8">
+                                <label class="form-label fw-bold text-secondary small">ชื่อสินค้า</label>
+                                <input type="text" class="form-control fw-bold text-dark" id="inpTitle" placeholder="เช่น iPhone 15 Pro Max..." required>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-bold text-secondary small">หมวดหมู่</label>
+                                <select class="form-select form-select-custom" id="inpCategory" required>
+                                    <option value="" selected disabled>เลือก...</option>
+                                    <option value="it">📱 ไอที</option>
+                                    <option value="fashion">👕 แฟชั่น</option>
+                                    <option value="amulet">🙏 พระเครื่อง</option>
+                                    <option value="home">🏠 ของใช้</option>
+                                    <option value="other">📦 อื่นๆ</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-secondary small">รายละเอียด</label>
+                                <textarea class="form-control" id="inpDesc" rows="2"></textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded-4 border">
+                                    <h6 class="fw-bold text-dark mb-3 small text-uppercase"><i class="bi bi-cash-coin me-1"></i> ตั้งค่าราคา</h6>
+                                    <div class="row g-2"> <div class="col-sm-4 col-12">
+                                            <label class="small text-muted mb-1" style="font-size: 0.75rem;">เริ่มต้น</label>
+                                            <div class="input-group input-group-custom input-group-sm">
+                                                <span class="input-group-text bg-transparent border-0 text-secondary fw-bold">฿</span>
+                                                <input type="number" class="form-control border-0 bg-transparent fw-bold" id="inpPrice" placeholder="0">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-sm-4 col-6">
+                                            <label class="small text-muted mb-1" style="font-size: 0.75rem;">ขั้นต่ำ (Step)</label>
+                                            <div class="input-group input-group-custom input-group-sm">
+                                                <span class="input-group-text bg-transparent border-0 text-warning fw-bold">+</span>
+                                                <input type="number" class="form-control border-0 bg-transparent fw-bold" id="inpBidIncrement" value="20">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-sm-4 col-6">
+                                            <label class="small text-success fw-bold mb-1" style="font-size: 0.75rem;">ขายสด (Buy Now)</label>
+                                            <div class="input-group input-group-custom input-group-sm bg-success-subtle border-success-subtle">
+                                                <span class="input-group-text bg-transparent border-0 text-success fw-bold"><i class="bi bi-lightning-fill"></i></span>
+                                                <input type="number" class="form-control border-0 bg-transparent fw-bold text-success" id="inpBuyNowPrice">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 mt-2">
+                                            <label class="small text-danger fw-bold mb-1">ปิดประมูล</label>
+                                            <input type="datetime-local" class="form-control form-control-sm border-danger-subtle fw-bold" id="inpEndTime" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between bg-white p-2 ps-3 pe-3 rounded-4 border shadow-sm gap-2">
+                                    <div class="d-flex align-items-center gap-2 w-100">
+                                        <i class="bi bi-envelope-at-fill text-secondary"></i>
+                                        <input type="email" class="form-control form-control-sm border-0 shadow-none" id="inpEmail" placeholder="Email ติดต่อ..." required>
+                                    </div>
+                                    <div class="form-check form-switch ms-1 mb-0 text-nowrap">
+                                        <input class="form-check-input" type="checkbox" id="chkProfileEmail" onchange="toggleContactInput('chkProfileEmail', 'inpEmail', 'contact_email')">
+                                        <label class="form-check-label small" for="chkProfileEmail">ใช้เมลเดิม</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 mt-2">
+                                <button type="submit" class="btn btn-gradient-add w-100 py-2 rounded-pill shadow border-0 fw-bold">
+                                    ลงขายทันที
+                                </button>
+                            </div>
+
                         </div>
-                        <button type="submit" class="btn btn-main w-100 mt-4 py-2 fs-5 rounded-pill shadow">ลงขายทันที</button>
                     </form>
                 </div>
             </div>
@@ -327,7 +411,7 @@
                                 </div>
 
                                 <div class="mb-4 ps-2 border-start border-4 border-danger border-opacity-50">
-                                    <h6 class="text-secondary text-uppercase small fw-bold mb-2 ps-1">รายละเอียดสินค้า</h6>
+                                    <h6 class="text-secondary text-uppercase small fw-bold mb-2 ps-1 text-truncate">รายละเอียดสินค้า</h6>
                                     <p id="modalDesc" class="text-dark opacity-75 ps-1" style="white-space: pre-line; line-height: 1.7; font-size: 0.95rem;">...</p>
                                 </div>
 
