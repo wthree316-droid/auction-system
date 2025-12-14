@@ -521,6 +521,23 @@ input[type="datetime-local"]::after {
     }
 }
 
+/* ตกแต่งกล่องแจ้งเตือนเมื่อไม่มีข้อมูล (Empty State) */
+.empty-state-box {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: #f8f9fa;
+    border: 2px dashed #e9ecef; /* เส้นประ */
+    border-radius: 20px;
+    color: #adb5bd;
+    margin-top: 20px;
+}
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+    display: block;
+}
+
 /* =======================================================
    4. PAGE SPECIFIC: INDEX & PRODUCTS
    ======================================================= */
