@@ -366,6 +366,7 @@ input[type="datetime-local"]::after {
 
 /* Modal Responsive Fixes */
 @media (max-width: 991.98px) {
+
     .modal-image-col { height: 350px; min-height: auto !important; }
     .modal-info-col { border-top: 1px solid #eee; }
 }
@@ -467,6 +468,57 @@ input[type="datetime-local"]::after {
     margin: 10px 0; /* เว้นระยะหัวท้าย */
     border-radius: 10px;
     background: transparent;
+}
+
+/* =======================================================
+   MOBILE DASHBOARD FIX (< 576px including 436px)
+   ======================================================= */
+@media (max-width: 576px) {
+    
+    /* 1. ปรับกล่องเมนู (Tabs) ให้ยืดเต็มความกว้างและแบ่งช่องสวยงาม */
+    #dashboardModal .nav-pills {
+        display: flex !important;       /* บังคับเป็น Flexbox */
+        flex-direction: row !important; /* บังคับเรียงแนวนอนเสมอ */
+        width: 100% !important;         /* ความกว้างเต็มจอ */
+        background-color: #f1f2f6;      /* สีพื้นหลังเทาอ่อน */
+        border-radius: 16px !important; /* ปรับความมนให้ดูทันสมัย (ลดจาก Pill) */
+        padding: 5px;                   /* ระยะห่างขอบ */
+        gap: 5px !important;            /* ระยะห่างระหว่างปุ่ม */
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); /* เงาด้านในเบาๆ ให้ดูมีมิติ */
+    }
+
+    /* 2. บังคับให้ปุ่มแต่ละอัน กว้างเท่ากัน (50%) */
+    #dashboardModal .nav-item {
+        flex: 1;           /* ยืดขยายเต็มพื้นที่ที่เหลือ */
+        width: 50%;        /* แบ่งครึ่ง */
+        text-align: center;
+    }
+
+    /* 3. ปรับสไตล์ปุ่มกด */
+    #dashboardModal .nav-link {
+        width: 100%;
+        border-radius: 12px !important; /* ความมนของปุ่ม */
+        font-size: 0.9rem;              /* ปรับขนาดฟอนต์ให้พอดี */
+        padding: 8px 4px;               /* ลด Padding เพื่อกันข้อความล้น */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;                       /* ระยะห่างไอคอนกับตัวหนังสือ */
+        white-space: nowrap;            /* ห้ามตัดบรรทัด */
+    }
+
+    /* 4. ปรับสีปุ่ม Active ให้เด่นชัดขึ้น */
+    #dashboardModal .nav-link.active {
+        background-color: #ffffff !important;
+        color: var(--primary-color) !important; /* ใช้สีหลัก (แดงอมชมพู) แทนสีน้ำเงิน */
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08); /* เงาลอย */
+        font-weight: 700;
+    }
+    
+    #dashboardModal .nav-link:not(.active) {
+        color: #636e72; /* สีเทาเข้มเมื่อไม่ได้เลือก */
+        background: transparent;
+    }
 }
 
 /* =======================================================
