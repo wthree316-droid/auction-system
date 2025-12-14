@@ -218,6 +218,7 @@ h1, h2, h3, h4, h5, .navbar-brand { font-family: 'Fredoka', sans-serif; }
     background: #fff; border: none; border-radius: 20px;
     overflow: hidden; transition: all 0.3s ease;
     box-shadow: var(--shadow-soft);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .card-custom:hover {
     transform: translateY(-8px); box-shadow: var(--shadow-hover);
@@ -235,9 +236,21 @@ h1, h2, h3, h4, h5, .navbar-brand { font-family: 'Fredoka', sans-serif; }
 
 /* --- Modals --- */
 .modal-content { 
-    background-color: #d16666; border: none; border-radius: 30px; 
+    background-color: #ddedec; 
+    border: none; 
+    border-radius: 30px; 
     overflow: hidden; box-shadow: var(--shadow-hover);
 }
+.modal {
+    z-index: 1060 !important; /* สูงกว่า Navbar */
+}
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+.navbar-superb {
+    z-index: 1030; /* ค่ามาตรฐาน */
+}
+
 .modal-image-col { background-color: #f1f2f6 !important; background-image: none !important; }
 .modal-info-col { background-color: #ffffff !important; border-left: none !important; }
 .btn-close-modal {
@@ -246,6 +259,110 @@ h1, h2, h3, h4, h5, .navbar-brand { font-family: 'Fredoka', sans-serif; }
     border-radius: 50%; width: 40px; height: 40px; border: none;
     position: absolute; top: 20px; right: 20px; z-index: 100;
 }
+
+.modal-header-superb {
+    background: linear-gradient(135deg, #fff, #f8f9fa);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 1.5rem;
+}
+.modal-title-gradient {
+    background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+}
+
+/* =======================================================
+   ADD ITEM MODAL SUPERB STYLES
+   ======================================================= */
+
+/* 1. Upload Zone Style */
+.upload-zone-superb {
+    background-color: #f8f9fa;
+    border: 2px dashed #cbd5e1;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.upload-zone-superb:hover, 
+.upload-zone-superb:focus-within {
+    background-color: #f1f5f9;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.1);
+}
+.upload-zone-superb .icon-box {
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.upload-zone-superb:hover .icon-box {
+    transform: scale(1.1) rotate(-10deg);
+}
+.cursor-pointer { cursor: pointer; }
+
+/* 2. Form & Inputs Refinements */
+.form-label {
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+/* ปรับ Input Group ให้ดูคลีนขึ้น */
+.input-group-custom {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px !important;
+    overflow: hidden;
+    transition: all 0.2s;
+}
+.input-group-custom:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+}
+.input-group-custom input {
+    box-shadow: none !important; /* ลบเงา default ของ bootstrap */
+}
+
+/* ปรับสี Placeholder ของ Buy Now ให้เป็นสีเขียวจางๆ */
+.placeholder-success::placeholder {
+    color: #198754;
+    opacity: 0.5;
+}
+
+/* 3. Date Input Styling */
+input[type="datetime-local"] {
+    position: relative;
+}
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+    z-index: 1;
+}
+/* สร้าง Icon ปฏิทินหลอกๆ */
+input[type="datetime-local"]::after {
+    background: none;
+    content: "\f22d"; /* Bootstrap Icons Code for calendar-event */
+    font-family: bootstrap-icons;
+    display: block;
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary-color);
+    pointer-events: none;
+}
+
+/* 4. Modal Specific Adjustments */
+.modal-content.shadow-hover {
+    transition: transform 0.3s;
+}
+/* ถ้าอยากให้ Modal ลอยขึ้นนิดนึงตอนเปิด (Optional) */
+.modal.show .modal-dialog { transform: scale(1); }
 
 /* Modal Responsive Fixes */
 @media (max-width: 991.98px) {
@@ -258,6 +375,22 @@ h1, h2, h3, h4, h5, .navbar-brand { font-family: 'Fredoka', sans-serif; }
     .scrollable-content { overflow-y: auto; flex-grow: 1; max-height: 400px; }
 }
 
+/* =======================================================
+   FIX MODAL ON TABLET (768px - 992px)
+   ======================================================= */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    /* บังคับขยายขนาด Modal ให้กว้างขึ้นใน Tablet */
+    .modal-dialog.modal-lg {
+        max-width: 720px !important; /* จากเดิม 500px ขยายเป็น 720px */
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    /* ปรับระยะห่างภายในให้ดูโปร่งขึ้น */
+    .modal-body {
+        padding: 2rem !important;
+    }
+}
 
 /* =========================================
    MODAL SUPERB STYLES (เพิ่มใหม่)
@@ -328,9 +461,14 @@ h1, h2, h3, h4, h5, .navbar-brand { font-family: 'Fredoka', sans-serif; }
 
 /* ปรับ Scrollbar ให้สวยงามใน Modal */
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #bdbdbd; }
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f5f5f5;
+    margin: 10px 0; /* เว้นระยะหัวท้าย */
+    border-radius: 10px;
+    background: transparent;
+}
 
 /* =======================================================
    4. PAGE SPECIFIC: INDEX & PRODUCTS
@@ -476,4 +614,40 @@ body.login-page {
 .count-badge { 
     background: #f1f2f6; color: #636e72; 
     padding: 2px 10px; border-radius: 10px; font-size: 0.9rem;
+}
+
+
+.skeleton {
+    background: #e0e0e0;
+    background: linear-gradient(90deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite linear;
+    border-radius: 4px;
+}
+@keyframes skeleton-loading {
+    0% { background-position: -150% 0; }
+    100% { background-position: 150% 0; }
+}
+
+/* Animation สำหรับปุ่ม Pulse (เต้น) */
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+        transform: scale(1);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(255, 71, 87, 0); /* เงากระจายออก */
+        transform: scale(1.03); /* ปุ่มขยายขึ้นนิดนึง */
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+        transform: scale(1);
+    }
+}
+
+/* Class ที่จะถูก JS สั่งให้เติมเข้าไป */
+.btn-pulse {
+    animation: pulse-red 1.5s infinite; /* เต้นวนไปเรื่อยๆ ทุก 1.5 วิ */
+    background: linear-gradient(135deg, #ff4757, #ff6b6b) !important; /* เปลี่ยนสีให้ดูเข้มข้นขึ้น */
+    border: 2px solid #fff !important; /* เพิ่มขอบขาวให้เด่น */
 }
