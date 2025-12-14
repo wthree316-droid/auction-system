@@ -11,8 +11,12 @@
     /* 🖼️ Backgrounds */
     --bg-color: #f8f9fa;
     --card-bg: #ffffff;
-    --bg-gradient-soft: radial-gradient(at 0% 0%, rgba(255, 107, 107, 0.05) 0px, transparent 50%),
-                        radial-gradient(at 100% 100%, rgba(29, 209, 161, 0.05) 0px, transparent 50%);
+
+    --bg-gradient-soft: 
+        radial-gradient(at 0% 0%, rgba(185, 25, 78, 0.196) 0, transparent 50%), 
+        radial-gradient(circle at 50% 0%, rgba(250, 201, 86, 0.1) 0, transparent 50%), 
+        radial-gradient(at 100% 0%, rgba(24, 180, 172, 0.434) 0, transparent 60%);
+
     --bg-gradient-login: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
 
     /* 🌑 Shadows */
@@ -30,6 +34,7 @@ body {
     font-family: 'Kanit', sans-serif; 
     min-height: 100vh;
     padding-bottom: 80px;
+    padding-top: 80px !important;
 }
 
 h1, h2, h3, h4, h5, .navbar-brand { font-family: 'Fredoka', sans-serif; }
@@ -42,50 +47,148 @@ h1, h2, h3, h4, h5, .navbar-brand { font-family: 'Fredoka', sans-serif; }
 
 
 /* =======================================================
-   3. SHARED COMPONENTS (Navbar, Buttons, Forms, Modals)
+   SUPERB HEADER STYLES
    ======================================================= */
 
-/* --- Navbar --- */
-.navbar-glass {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+/* 1. Navbar Container */
+.navbar-superb {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: saturate(180%) blur(20px); /* Apple-style blur */
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    transition: all 0.3s ease;
 }
 
-/* --- Buttons --- */
-.btn-main {
-    background: var(--primary-color);
-    color: #fff;
-    border: none; font-weight: 600;
-    border-radius: 50px; padding: 10px 25px;
-    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-    transition: all 0.2s ease;
-}
-.btn-main:hover { 
-    background: #ff5252;
-    transform: translateY(-2px); 
-    color: #fff;
-}
-
-.btn-gold { 
-    background: #fff; color: #f39c12; 
-    border: 1px solid #f39c12; border-radius: 50px; font-weight: 600;
-}
-.btn-gold:hover { background: #f39c12; color: #fff; }
-
-.btn-outline-custom { 
-    background: #fff;
-    border: 1px solid #eee; color: #888; 
-    border-radius: 50%; width: 45px; height: 45px; 
+/* 2. Brand Logo */
+.brand-logo-box {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--primary-color), #ff9ff3);
+    border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: var(--shadow-soft);
+    font-size: 1.2rem;
+    box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+    transform: rotate(-5deg);
+    transition: transform 0.3s;
+}
+.navbar-brand:hover .brand-logo-box { transform: rotate(0deg) scale(1.1); }
+.brand-text { font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 1.4rem; letter-spacing: -0.5px; color: var(--text-color); }
+.text-gradient {
+    /* 1. ใส่สีพื้นหลัง (ต้องมั่นใจว่าตัวแปรสีถูกต้อง) */
+    background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+    
+    /* 2. สั่งตัดพื้นหลังให้เป็นรูปตัวอักษร (ใส่ทั้งแบบมาตรฐานและแบบ Webkit) */
+    -webkit-background-clip: text; 
+    background-clip: text;         
+    
+    /* 3. สั่งสีตัวอักษรให้โปร่งใส (เพื่อให้เห็นพื้นหลัง) */
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    
+    /* 4. แนะนำ: ใส่ inline-block เพื่อให้ Gradient คำนวณความกว้างได้ถูกต้อง */
+    display: inline-block; 
+}
+.brand-slogan { font-size: 0.65rem; color: #999; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+
+/* 3. Search Command Center */
+.search-wrapper-superb { max-width: 600px; }
+.search-group-superb {
+    background: #f1f2f6;
+    border: 2px solid transparent;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    /* overflow: hidden; */
+}
+.search-group-superb:focus-within {
+    background: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.1);
+}
+.btn-filter-toggle {
+    border-radius: 50px;
+    margin: 3px;
+    padding: 6px 15px;
+    background: #fff;
+    border: 1px solid #ddd;
+    color: var(--text-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.btn-filter-toggle:hover { background: var(--text-color); color: #fff; }
+
+/* 4. Action Buttons (Icons) */
+.btn-icon-superb {
+    width: 45px; height: 45px;
+    border-radius: 50%; /* วงกลมบน Desktop */
+    background: transparent;
+    border: 1px solid transparent;
+    color: #636e72;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.btn-icon-superb:hover {
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+/* Mobile Adjustment for buttons */
+@media (max-width: 1199px) {
+    .btn-icon-superb {
+        width: 100%; border-radius: 10px; height: auto; padding: 10px;
+        background: #f8f9fa; justify-content: flex-start;
+    }
+}
+
+/* 5. Gradient Add Button */
+.btn-gradient-add {
+    background: linear-gradient(135deg, var(--primary-color), #ff4757);
+    color: white; border: none;
+    border-radius: 50px;
+    padding: 8px 24px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
     transition: all 0.3s;
 }
-.btn-outline-custom:hover { 
-    color: var(--secondary-color); border-color: var(--secondary-color);
-    transform: rotate(15deg); 
+.btn-gradient-add:hover {
+    box-shadow: 0 8px 20px rgba(255, 71, 87, 0.4);
+    transform: translateY(-2px); color: white;
 }
+
+/* 6. Profile Superb */
+.btn-profile-superb {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 50px;
+    transition: all 0.3s;
+}
+.btn-profile-superb:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+.avatar-box {
+    width: 32px; height: 32px;
+    background: #dfe6e9;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #636e72;
+}
+.xs-text { font-size: 0.7rem; }
+
+/* 7. Hamburger Icon Animation */
+.hamburger-icon { width: 30px; height: 20px; position: relative; }
+.hamburger-icon span {
+    display: block; position: absolute; height: 3px; width: 100%;
+    background: var(--text-color); border-radius: 9px;
+    transition: .25s ease-in-out;
+}
+.hamburger-icon span:nth-child(1) { top: 0px; }
+.hamburger-icon span:nth-child(2) { top: 9px; }
+.hamburger-icon span:nth-child(3) { top: 18px; }
+/* เมื่อกดเปิดเมนู (ถ้าต้องการให้เปลี่ยนรูปกากบาท ต้องเพิ่ม class .open ผ่าน JS) */
 
 /* --- Inputs & Forms --- */
 .input-group-custom {
@@ -143,6 +246,8 @@ h1, h2, h3, h4, h5, .navbar-brand { font-family: 'Fredoka', sans-serif; }
     border-radius: 50%; width: 40px; height: 40px; border: none;
     position: absolute; top: 20px; right: 20px; z-index: 100;
 }
+
+
 
 /* Modal Responsive Fixes */
 @media (max-width: 991.98px) {
@@ -299,98 +404,4 @@ body.login-page {
 .count-badge { 
     background: #f1f2f6; color: #636e72; 
     padding: 2px 10px; border-radius: 10px; font-size: 0.9rem;
-}
-
-
-/* =========================================
-   1. IMPROVED RESPONSIVE SEARCH BAR
-   ========================================= */
-/* Container หลักของ Search bar และ Filter */
-.search-container {
-    display: flex;
-    gap: 15px;
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    align-items: center;
-}
-
-.search-box {
-    flex-grow: 1; /* กินพื้นที่ที่เหลือทั้งหมด */
-}
-
-.filter-group {
-    display: flex;
-    gap: 10px;
-}
-
-/* 📱 Mobile Layout (หน้าจอมือถือ/แท็บเล็ตแนวตั้ง) */
-@media (max-width: 991px) {
-    .search-container {
-        flex-direction: column; /* เรียงลงแนวตั้ง */
-        gap: 10px;
-    }
-    
-    .search-box {
-        width: 100%; /* ช่องค้นหาเต็มจอ */
-    }
-    
-    .filter-group {
-        width: 100%; /* กลุ่มตัวกรองเต็มจอ */
-    }
-    
-    .filter-group select {
-        flex: 1; /* แบ่งครึ่งความกว้างเท่ากันเป๊ะ */
-        width: 50%;
-    }
-}
-
-/* =========================================
-   2. SUPERB ACTION BUTTONS (Dashboard & Recover)
-   ========================================= */
-.btn-superb {
-    display: flex;
-    align-items: center;
-    gap: 8px; /* ระยะห่างไอคอนกับตัวหนังสือ */
-    padding: 8px 16px;
-    border-radius: 50px;
-    background: #ffffff;
-    border: 1px solid #f0f0f0;
-    color: var(--text-color);
-    font-weight: 600;
-    font-size: 0.9rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    text-decoration: none;
-    cursor: pointer;
-    white-space: nowrap; /* ห้ามตัวหนังสือขึ้นบรรทัดใหม่ */
-}
-
-/* เอฟเฟกต์ตอนชี้เมาส์ (Hover) */
-.btn-superb:hover {
-    transform: translateY(-3px); /* ลอยขึ้นนิดนึง */
-    box-shadow: 0 8px 20px rgba(0,0,0,0.08); /* เงาฟุ้งขึ้น */
-}
-
-/* 🎨 ปุ่ม Dashboard (สีฟ้า/มิ้นต์) */
-.btn-superb-dash i { color: var(--secondary-color); font-size: 1.1rem; }
-.btn-superb-dash:hover {
-    border-color: var(--secondary-color);
-    background: #f0fff4; /* พื้นหลังเขียวอ่อนจางๆ */
-    color: var(--secondary-color);
-}
-
-/* 🎨 ปุ่มกู้คืน (สีส้ม/เหลือง) */
-.btn-superb-recover i { color: var(--accent-color); font-size: 1.1rem; }
-.btn-superb-recover:hover {
-    border-color: var(--accent-color);
-    background: #fffbf0; /* พื้นหลังเหลืองอ่อนจางๆ */
-    color: #e67e22;
-}
-
-/* ซ่อนข้อความเมื่อจอเล็กมากๆ (มือถือจอเล็กสุดๆ) เพื่อประหยัดที่ */
-@media (max-width: 450px) {
-    .btn-superb span { display: none; }
-    .btn-superb { padding: 10px; border-radius: 50%; width: 42px; height: 42px; justify-content: center; }
-    .btn-superb i { margin: 0; }
 }
